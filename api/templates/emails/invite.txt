@@ -1,0 +1,8 @@
+Hello {{ user.first_name|default:user.email }},
+
+You have been invited to access Journals KE.
+Complete your account setup and choose a password using the link below:
+{{ action_url }}
+
+This link expires on {{ token.expires_at }}.
+If you believe this was sent in error, you can ignore this email.

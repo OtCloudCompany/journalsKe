@@ -1,0 +1,9 @@
+Hello {{ user.first_name|default:user.email }},
+
+Thank you for registering with Journals KE.
+Please confirm your email address by visiting the link below:
+{{ action_url }}
+
+This link expires on {{ token.expires_at }}.
+
+If you did not create this account, no action is needed.

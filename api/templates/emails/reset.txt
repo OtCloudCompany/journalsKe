@@ -1,0 +1,9 @@
+Hello {{ user.first_name|default:user.email }},
+
+A password reset was requested for your Journals KE account.
+Reset your password using the link below:
+{{ action_url }}
+
+This link expires on {{ token.expires_at }}.
+{% if triggered_by_admin %}This request was initiated by an administrator to help you regain access.{% endif %}
+If you did not request this change, you can ignore this email.

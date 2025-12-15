@@ -1,0 +1,10 @@
+Hello {{ profile.display_name }},
+
+Please verify your institutional email address ({{ token.email }}) for your Journals KE researcher profile. Confirming this address lets us display your profile to the community and link it to your institution.
+
+Verify your email: {{ action_url }}
+
+If you did not request this verification, you can ignore this message.
+
+Thanks,
+The Journals KE Team

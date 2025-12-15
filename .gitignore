@@ -1,0 +1,68 @@
+# General
+*.log
+*.tmp
+*.temp
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.eggs/
+.Python
+.python-version
+venv/
+.env
+.env.local
+.venv/
+.env*/
+
+# Django
+*.sqlite3
+media/
+staticfiles/
+
+# Test & coverage artifacts
+.coverage
+.coverage.*
+htmlcov/
+coverage/
+.pytest_cache/
+.mypy_cache/
+
+# Local settings/secrets
+my_secrets.py
+
+# Angular / Node
+client/node_modules/
+client/dist/
+client/.angular/
+client/.angular/cache/
+client/.eslintcache
+client/.parcel-cache/
+client/.sass-cache/
+client/.cache/
+client/npm-debug.log*
+client/yarn-debug.log*
+client/yarn-error.log*
+client/pnpm-debug.log*
+client/.env
+client/.env.*
+client/.turbo/
+client/.vercel/
+
+# TypeScript build info
+client/**/*.tsbuildinfo
+
+# Misc build artifacts
+.esbuild/
+.tmp/

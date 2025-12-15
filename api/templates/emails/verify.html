@@ -1,0 +1,5 @@
+<p>Hello {{ user.first_name|default:user.email }},</p>
+<p>Thank you for registering with Journals KE.</p>
+<p><a href="{{ action_url }}">Confirm your email address</a></p>
+<p>This link expires on {{ token.expires_at }}.</p>
+<p>If you did not create this account, no action is needed.</p>

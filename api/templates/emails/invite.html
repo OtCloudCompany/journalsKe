@@ -1,0 +1,5 @@
+<p>Hello {{ user.first_name|default:user.email }},</p>
+<p>You have been invited to access Journals KE.</p>
+<p><a href="{{ action_url }}">Complete your account setup</a></p>
+<p>This link expires on {{ token.expires_at }}.</p>
+<p>If you believe this was sent in error, you can ignore this email.</p>
