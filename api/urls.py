@@ -9,6 +9,7 @@ from .views import (
     PublicationViewSet,
     PublicationSearchView,
     PublicationSearchFacetView,
+    OAIHarvestLogViewSet,
     PasswordResetRequestView,
     PasswordResetView,
     ProfileView,
@@ -30,6 +31,8 @@ router.register(r"journals", JournalViewSet, basename="journal")
 router.register(r"publications", PublicationViewSet, basename="publication")
 router.register(r"researchers", ResearcherProfileViewSet,
                 basename="researcher")
+router.register(r"harvest-logs", OAIHarvestLogViewSet,
+                basename="harvest-log")
 
 urlpatterns = [
     path("auth/register/", RegistrationView.as_view(), name="auth-register"),

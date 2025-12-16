@@ -4,6 +4,7 @@ from django.utils.translation import gettext_lazy as _
 
 from .models import (
     Journal,
+    OAIHarvestLog,
     Publication,
     ResearcherExperience,
     ResearcherInstitutionalEmailToken,
@@ -51,6 +52,30 @@ class UserTokenAdmin(admin.ModelAdmin):
     search_fields = ("user__email", "token")
 
 
+class OAIHarvestLogInline(admin.TabularInline):
+    model = OAIHarvestLog
+    extra = 0
+    can_delete = False
+    fields = (
+        "started_at",
+        "finished_at",
+        "endpoint",
+        "status",
+        "record_count",
+        "error_message",
+    )
+    readonly_fields = fields
+    ordering = ("-started_at",)
+    verbose_name_plural = "Harvest logs"
+
+    def has_add_permission(self, request, obj=None):  # noqa: D401
+        """Inline is read-only."""
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
 @admin.register(Journal)
 class JournalAdmin(admin.ModelAdmin):
     list_display = ("name", "publisher", "chief_editor",
@@ -59,6 +84,33 @@ class JournalAdmin(admin.ModelAdmin):
     search_fields = ("name", "publisher", "chief_editor",
                      "issn_print", "issn_online", "oai_url")
     readonly_fields = ("slug", "created_at", "updated_at", "last_harvested_at")
+    inlines = (OAIHarvestLogInline,)
+
+
+@admin.register(OAIHarvestLog)
+class OAIHarvestLogAdmin(admin.ModelAdmin):
+    list_display = (
+        "journal",
+        "status",
+        "started_at",
+        "finished_at",
+        "record_count",
+    )
+    list_filter = ("status", "journal")
+    search_fields = ("journal__name", "endpoint", "error_message")
+    readonly_fields = (
+        "journal",
+        "started_at",
+        "finished_at",
+        "endpoint",
+        "status",
+        "record_count",
+        "error_message",
+    )
+    ordering = ("-started_at", "-id")
+
+    def has_add_permission(self, request):
+        return False
 
 
 @admin.register(Publication)

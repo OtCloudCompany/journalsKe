@@ -23,6 +23,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 
 from .models import (
     Journal,
+    OAIHarvestLog,
     Publication,
     PublicationMetadata,
     ResearcherInstitutionalEmailToken,
@@ -41,6 +42,7 @@ from .serializers import (
     PasswordResetSerializer,
     ProfileUpdateSerializer,
     PublicationSerializer,
+    OAIHarvestLogSerializer,
     RegistrationSerializer,
     ResearcherProfilePhotoSerializer,
     ResearcherProfileSerializer,
@@ -163,6 +165,32 @@ class ProfileView(APIView):
     def get(self, request, *args, **kwargs):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
+
+
+class OAIHarvestLogViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = OAIHarvestLog.objects.select_related(
+        "journal").order_by("-started_at", "-id")
+    serializer_class = OAIHarvestLogSerializer
+    permission_classes = (permissions.IsAdminUser,)
+    pagination_class = ClientPageNumberPagination
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        params = self.request.query_params
+
+        journal_slug = (params.get("journal") or "").strip()
+        if journal_slug:
+            queryset = queryset.filter(journal__slug__iexact=journal_slug)
+
+        journal_id = (params.get("journal_id") or "").strip()
+        if journal_id:
+            queryset = queryset.filter(journal_id=journal_id)
+
+        status_param = (params.get("status") or "").strip().lower()
+        if status_param in {choice[0] for choice in OAIHarvestLog.Status.choices}:
+            queryset = queryset.filter(status=status_param)
+
+        return queryset
 
     def patch(self, request, *args, **kwargs):
         serializer = ProfileUpdateSerializer(

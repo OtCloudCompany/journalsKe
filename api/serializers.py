@@ -15,6 +15,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from .models import (
     Journal,
+    OAIHarvestLog,
     Publication,
     PublicationMetadata,
     ResearcherExperience,
@@ -252,6 +253,34 @@ class JournalSerializer(serializers.ModelSerializer):
             "created_at",
             "updated_at",
         )
+
+
+class OAIHarvestLogSerializer(serializers.ModelSerializer):
+    journal = serializers.SerializerMethodField()
+
+    class Meta:
+        model = OAIHarvestLog
+        fields = (
+            "id",
+            "journal",
+            "started_at",
+            "finished_at",
+            "endpoint",
+            "status",
+            "record_count",
+            "error_message",
+        )
+        read_only_fields = fields
+
+    def get_journal(self, obj: OAIHarvestLog) -> dict[str, str] | None:
+        journal = obj.journal
+        if journal is None:
+            return None
+        return {
+            "id": str(journal.id),
+            "slug": journal.slug,
+            "name": journal.name,
+        }
 
 
 class OAIEndpointTestSerializer(serializers.Serializer):

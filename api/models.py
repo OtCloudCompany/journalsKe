@@ -149,6 +149,69 @@ class Journal(models.Model):
         super().save(*args, **kwargs)
 
 
+class OAIHarvestLog(models.Model):
+    class Status(models.TextChoices):
+        RUNNING = "running", "Running"
+        SUCCESS = "success", "Success"
+        FAILED = "failed", "Failed"
+
+    id = models.BigAutoField(primary_key=True)
+    journal = models.ForeignKey(
+        Journal,
+        related_name="harvest_logs",
+        on_delete=models.CASCADE,
+    )
+    started_at = models.DateTimeField(default=timezone.now)
+    finished_at = models.DateTimeField(null=True, blank=True)
+    endpoint = models.URLField(blank=True)
+    status = models.CharField(
+        max_length=16,
+        choices=Status.choices,
+        default=Status.RUNNING,
+    )
+    record_count = models.PositiveIntegerField(default=0)
+    error_message = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ("-started_at", "-id")
+        verbose_name = "OAI harvest log"
+        verbose_name_plural = "OAI harvest logs"
+
+    def __str__(self) -> str:
+        status = self.get_status_display()
+        started = self.started_at.astimezone(
+            timezone.get_current_timezone()) if self.started_at else None
+        ts = started.strftime("%Y-%m-%d %H:%M") if started else "unknown"
+        return f"{self.journal.name} – {status} ({ts})"
+
+    def mark_success(self, record_count: int) -> None:
+        self.status = self.Status.SUCCESS
+        self.record_count = max(0, record_count)
+        self.error_message = ""
+        self.finished_at = timezone.now()
+        self.save(update_fields=[
+            "status",
+            "record_count",
+            "error_message",
+            "finished_at",
+        ])
+
+    def mark_failure(self, reason: str, record_count: int = 0) -> None:
+        truncated_reason = (reason or "").strip()
+        if truncated_reason and len(truncated_reason) > 2000:
+            truncated_reason = f"{truncated_reason[:1997]}..."
+        self.status = self.Status.FAILED
+        self.record_count = max(0, record_count)
+        self.error_message = truncated_reason
+        self.finished_at = timezone.now()
+        self.save(update_fields=[
+            "status",
+            "record_count",
+            "error_message",
+            "finished_at",
+        ])
+
+
 class Publication(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     journal = models.ForeignKey(

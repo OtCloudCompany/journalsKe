@@ -1,5 +1,6 @@
 import logging
 from collections import defaultdict
+from dataclasses import dataclass
 from datetime import datetime, time, timezone as dt_timezone
 from typing import Dict, Iterable, List, Optional, Tuple
 from urllib.error import HTTPError, URLError
@@ -11,12 +12,29 @@ from django.db import transaction
 from django.utils import timezone
 from django.utils.dateparse import parse_date, parse_datetime
 
+from api.harvesting.logging import HarvestLogWriter
 from api.models import Journal, Publication
 from api.oai import OAI_NAMESPACES, fetch_oai_response
 from api.search.publication_index import PublicationDocument
 from api.serializers import PublicationSerializer
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class HarvestSummary:
+    created: int = 0
+    updated: int = 0
+
+    @property
+    def harvested(self) -> int:
+        return self.created + self.updated
+
+
+class HarvestExecutionError(Exception):
+    def __init__(self, message: str, *, summary: Optional[HarvestSummary] = None):
+        super().__init__(message)
+        self.summary = summary or HarvestSummary()
 
 
 class Command(BaseCommand):
@@ -60,15 +78,44 @@ class Command(BaseCommand):
         total_created = 0
         total_updated = 0
         for journal in journals:
-            created, updated = self._harvest_journal(
-                journal, from_override, limit)
-            total_created += created
-            total_updated += updated
-            self.stdout.write(
-                self.style.SUCCESS(
-                    f"{journal.name}: harvested {created} new, {updated} updated publications."
+            log_writer = HarvestLogWriter.start(
+                journal=journal, endpoint=journal.oai_url)
+            summary: Optional[HarvestSummary] = None
+            try:
+                summary = self._harvest_journal(journal, from_override, limit)
+            except HarvestExecutionError as exc:
+                failure_summary = exc.summary
+                log_writer.mark_failure(str(exc), failure_summary.harvested)
+                self.stderr.write(
+                    self.style.ERROR(
+                        f"{journal.name}: {exc}"
+                    )
                 )
-            )
+                continue
+            except Exception as exc:  # pylint: disable=broad-except
+                log_writer.mark_failure(str(exc))
+                logger.exception(
+                    "Unexpected error while harvesting journal %s", journal)
+                self.stderr.write(
+                    self.style.ERROR(
+                        f"{journal.name}: unexpected error during harvest: {exc}"
+                    )
+                )
+                continue
+            else:
+                log_writer.mark_success(summary.harvested)
+                total_created += summary.created
+                total_updated += summary.updated
+                self.stdout.write(
+                    self.style.SUCCESS(
+                        f"{journal.name}: harvested {summary.created} new, {summary.updated} updated publications."
+                    )
+                )
+            finally:
+                if summary is not None:
+                    log_writer.ensure_closed(summary.harvested)
+                else:
+                    log_writer.ensure_closed()
 
         self.stdout.write(
             self.style.SUCCESS(
@@ -81,9 +128,9 @@ class Command(BaseCommand):
         journal: Journal,
         from_override: Optional[str],
         record_limit: Optional[int],
-    ) -> Tuple[int, int]:
+    ) -> HarvestSummary:
         if not journal.oai_url:
-            raise CommandError(
+            raise HarvestExecutionError(
                 f"Journal '{journal}' does not have an OAI-PMH URL configured.")
 
         base_url, base_params = self._prepare_oai_endpoint(journal.oai_url)
@@ -104,85 +151,98 @@ class Command(BaseCommand):
         resumption_token: Optional[str] = None
         params = dict(base_params)
 
-        while True:
-            if resumption_token:
-                params = {"verb": "ListRecords",
-                          "resumptionToken": resumption_token}
-            else:
-                params = dict(base_params)
-            try:
-                xml_payload = self._fetch_oai_response(base_url, params)
-            except (HTTPError, URLError) as exc:
-                raise CommandError(
-                    f"Failed to harvest '{journal.name}': {exc}") from exc
+        try:
+            while True:
+                if resumption_token:
+                    params = {"verb": "ListRecords",
+                              "resumptionToken": resumption_token}
+                else:
+                    params = dict(base_params)
+                try:
+                    xml_payload = self._fetch_oai_response(base_url, params)
+                except (HTTPError, URLError) as exc:
+                    raise HarvestExecutionError(
+                        f"Failed to harvest '{journal.name}': {exc}",
+                        summary=HarvestSummary(
+                            created=created, updated=updated),
+                    ) from exc
 
-            records, resumption_token = self._parse_oai_records(xml_payload)
-            if not records and not resumption_token:
-                break
-
-            for record in records:
-                if record_limit is not None and processed >= record_limit:
-                    resumption_token = None
+                records, resumption_token = self._parse_oai_records(
+                    xml_payload)
+                if not records and not resumption_token:
                     break
 
-                identifier = record.get("identifier")
-                if not identifier:
-                    logger.warning(
-                        "Skipping record with missing identifier for journal %s", journal)
+                for record in records:
+                    if record_limit is not None and processed >= record_limit:
+                        resumption_token = None
+                        break
+
+                    identifier = record.get("identifier")
+                    if not identifier:
+                        logger.warning(
+                            "Skipping record with missing identifier for journal %s", journal)
+                        processed += 1
+                        continue
+
+                    datestamp = self._parse_oai_datestamp(
+                        record.get("datestamp"))
+                    publication = Publication.objects.filter(
+                        oai_identifier=identifier).first()
+                    was_existing = publication is not None
+                    if (
+                        was_existing
+                        and datestamp
+                        and publication.oai_datestamp
+                        and datestamp <= publication.oai_datestamp
+                    ):
+                        processed += 1
+                        continue
+
+                    payload = self._build_publication_payload(record)
+                    if not payload:
+                        processed += 1
+                        continue
+
+                    try:
+                        with transaction.atomic():
+                            serializer = PublicationSerializer(
+                                instance=publication, data=payload)
+                            serializer.is_valid(raise_exception=True)
+                            publication = serializer.save()
+                            update_fields = ["journal", "oai_datestamp"]
+                            publication.journal = journal
+                            publication.oai_datestamp = datestamp
+                            if identifier:
+                                publication.oai_identifier = identifier
+                                update_fields.append("oai_identifier")
+                            publication.save(update_fields=update_fields)
+                    except Exception as exc:  # pylint: disable=broad-except
+                        logger.exception(
+                            "Failed to persist OAI record %s: %s", identifier, exc)
+                        processed += 1
+                        continue
+
+                    if publication.oai_datestamp and (
+                        latest_datestamp is None or publication.oai_datestamp > latest_datestamp
+                    ):
+                        latest_datestamp = publication.oai_datestamp
+
+                    publication_ids.append(str(publication.pk))
+                    if was_existing:
+                        updated += 1
+                    else:
+                        created += 1
                     processed += 1
-                    continue
 
-                datestamp = self._parse_oai_datestamp(record.get("datestamp"))
-                publication = Publication.objects.filter(
-                    oai_identifier=identifier).first()
-                was_existing = publication is not None
-                if (
-                    was_existing
-                    and datestamp
-                    and publication.oai_datestamp
-                    and datestamp <= publication.oai_datestamp
-                ):
-                    processed += 1
-                    continue
-
-                payload = self._build_publication_payload(record)
-                if not payload:
-                    processed += 1
-                    continue
-
-                try:
-                    with transaction.atomic():
-                        serializer = PublicationSerializer(
-                            instance=publication, data=payload)
-                        serializer.is_valid(raise_exception=True)
-                        publication = serializer.save()
-                        update_fields = ["journal", "oai_datestamp"]
-                        publication.journal = journal
-                        publication.oai_datestamp = datestamp
-                        if identifier:
-                            publication.oai_identifier = identifier
-                            update_fields.append("oai_identifier")
-                        publication.save(update_fields=update_fields)
-                except Exception as exc:  # pylint: disable=broad-except
-                    logger.exception(
-                        "Failed to persist OAI record %s: %s", identifier, exc)
-                    processed += 1
-                    continue
-
-                if publication.oai_datestamp and (
-                    latest_datestamp is None or publication.oai_datestamp > latest_datestamp
-                ):
-                    latest_datestamp = publication.oai_datestamp
-
-                publication_ids.append(str(publication.pk))
-                if was_existing:
-                    updated += 1
-                else:
-                    created += 1
-                processed += 1
-
-            if not resumption_token:
-                break
+                if not resumption_token:
+                    break
+        except HarvestExecutionError:
+            raise
+        except Exception as exc:  # pylint: disable=broad-except
+            raise HarvestExecutionError(
+                f"Unexpected error while harvesting '{journal.name}': {exc}",
+                summary=HarvestSummary(created=created, updated=updated),
+            ) from exc
 
         if latest_datestamp and latest_datestamp != journal.last_harvested_at:
             journal.last_harvested_at = latest_datestamp
@@ -192,7 +252,7 @@ class Command(BaseCommand):
             queryset = Publication.objects.filter(pk__in=publication_ids)
             PublicationDocument().update(queryset)
 
-        return created, updated
+        return HarvestSummary(created=created, updated=updated)
 
     def _prepare_oai_endpoint(self, oai_url: str) -> Tuple[str, Dict[str, str]]:
         parsed = urlparse(oai_url)
