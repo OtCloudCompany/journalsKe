@@ -8,6 +8,7 @@
 Thumbs.db
 .idea/
 .vscode/
+.github/
 
 # Python
 __pycache__/
