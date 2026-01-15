@@ -19,6 +19,35 @@ curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
 sudo apt install -y nodejs
 ```
 
+## Elasticsearch Setup
+
+1.  Import the Elasticsearch PGP Key:
+    ```bash
+    wget -qO - https://artifacts.elastic.co/GPG-KEY-elasticsearch | sudo gpg --dearmor -o /usr/share/keyrings/elasticsearch-keyring.gpg
+    ```
+
+2.  Add the repository:
+    ```bash
+    echo "deb [signed-by=/usr/share/keyrings/elasticsearch-keyring.gpg] https://artifacts.elastic.co/packages/8.x/apt stable main" | sudo tee /etc/apt/sources.list.d/elastic-8.x.list
+    ```
+
+3.  Install Elasticsearch:
+    ```bash
+    sudo apt update
+    sudo apt install -y elasticsearch
+    ```
+
+4.  Start and enable the service:
+    ```bash
+    sudo systemctl start elasticsearch
+    sudo systemctl enable elasticsearch
+    ```
+
+5.  Reset the `elastic` user password (save this for `my_secrets.py`):
+    ```bash
+    sudo /usr/share/elasticsearch/bin/elasticsearch-reset-password -u elastic
+    ```
+
 ## Database Setup
 
 1.  Log in to MySQL:
@@ -60,7 +89,12 @@ sudo apt install -y nodejs
     python manage.py collectstatic --noinput
     ```
 
-6.  Create a Gunicorn systemd service:
+6.  Build the Elasticsearch index:
+    ```bash
+    python manage.py search_index --rebuild
+    ```
+
+7.  Create a Gunicorn systemd service:
     -   File: `/etc/systemd/system/journals-backend.service`
     -   Content (adjust paths and user):
         ```ini
@@ -78,7 +112,7 @@ sudo apt install -y nodejs
         WantedBy=multi-user.target
         ```
 
-7.  Start and enable the backend service:
+8.  Start and enable the backend service:
     ```bash
     sudo systemctl start journals-backend
     sudo systemctl enable journals-backend
