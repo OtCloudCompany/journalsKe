@@ -1,0 +1,248 @@
+<section class="journals-list py-5">
+    <div class="container-xxl">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
+            <div>
+                <h1 class="h3 mb-1">Journals Directory</h1>
+                <p class="text-muted mb-0">Browse research journals and explore their key information.</p>
+            </div>
+            <form [formGroup]="searchForm" class="search-form" role="search">
+                <div class="search-form-controls">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="search" class="form-control" placeholder="Search journals"
+                            formControlName="search">
+                    </div>
+                    <div class="page-size-control">
+                        <label class="form-label mb-0 small text-muted" for="pageSizeSelect">Items per page</label>
+                        <select id="pageSizeSelect" class="form-select form-select-sm" formControlName="pageSize">
+                            <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }} per page</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="row g-4 align-items-start">
+            <div class="col-lg-8 order-2 order-lg-1">
+                <div *ngIf="loading()" class="text-center py-5">
+                    <div class="spinner-border" role="status"></div>
+                    <p class="mt-3 text-muted">Loading journals…</p>
+                </div>
+
+                <div *ngIf="!loading() && error()" class="alert alert-danger" role="alert">
+                    {{ error() }}
+                </div>
+
+                <ng-container *ngIf="!loading() && !error()">
+                    <div class="row g-4" *ngIf="hasResults()">
+                        <div class="col-md-6 col-xl-4" *ngFor="let journal of journals(); trackBy: trackBySlug">
+                            <article class="card h-100 shadow-sm">
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <h2 class="h5 mb-0">
+                                            <a [routerLink]="['/journals', journal.slug]"
+                                                class="stretched-link text-decoration-none">
+                                                {{ journal.name }}
+                                            </a>
+                                        </h2>
+                                        <span class="badge"
+                                            [ngClass]="journal.is_active ? 'text-bg-success' : 'text-bg-secondary'">
+                                            {{ journal.is_active ? 'Active' : 'Inactive' }}
+                                        </span>
+                                    </div>
+                                    <p class="text-muted flex-grow-1">
+                                        {{ formatDescription(journal.description) }}
+                                    </p>
+                                    <dl class="small mb-0">
+                                        <div class="d-flex justify-content-between">
+                                            <dt class="text-muted">Chief editor</dt>
+                                            <dd class="mb-0">{{ journal.chief_editor || 'Not listed' }}</dd>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <dt class="text-muted">Publisher</dt>
+                                            <dd class="mb-0">{{ journal.publisher || 'Not listed' }}</dd>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <dt class="text-muted">Updated</dt>
+                                            <dd class="mb-0">{{ journal.updated_at | date: 'mediumDate' }}</dd>
+                                        </div>
+                                    </dl>
+                                </div>
+                            </article>
+                        </div>
+                    </div>
+
+                    <div *ngIf="isEmpty()" class="alert alert-info">
+                        No journals were returned. Try adjusting your search or check back later.
+                    </div>
+                </ng-container>
+
+                <nav class="mt-4" *ngIf="totalPages() > 1 && hasResults()">
+                    <ul class="pagination justify-content-center flex-wrap gap-1">
+                        <li class="page-item" [class.disabled]="page() === 1">
+                            <button class="page-link" type="button" (click)="previousPage()" [disabled]="page() === 1"
+                                aria-label="Previous page">Previous</button>
+                        </li>
+                        <li class="page-item" *ngFor="let pageNumber of pageNumbers()"
+                            [class.active]="pageNumber === page()">
+                            <button class="page-link" type="button" (click)="goToPage(pageNumber)"
+                                [attr.aria-current]="pageNumber === page() ? 'page' : null"
+                                [disabled]="pageNumber === page()">{{ pageNumber }}</button>
+                        </li>
+                        <li class="page-item" [class.disabled]="page() === totalPages()">
+                            <button class="page-link" type="button" (click)="nextPage()"
+                                [disabled]="page() === totalPages()" aria-label="Next page">Next</button>
+                        </li>
+                    </ul>
+                    <p class="text-center text-muted small mt-2 mb-0">
+                        Showing page {{ page() }} of {{ totalPages() }} — {{ count() }} journals
+                    </p>
+                </nav>
+            </div>
+
+            <div class="col-lg-4 order-1 order-lg-2">
+                <aside class="sidebar d-flex flex-column gap-4">
+                    <section class="card shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h6 text-uppercase text-muted mb-3">Actions</h2>
+                            <p class="small text-muted mb-3">Authenticated users can contribute new journal records.</p>
+                            <button class="btn btn-success w-100" type="button" *ngIf="canCreate()"
+                                (click)="goToCreate()">
+                                <i class="bi bi-plus-circle me-1"></i>
+                                Add journal
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="card shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h6 text-uppercase text-muted mb-3">Top publication facets</h2>
+                            <p class="small text-muted mb-3">Spot popular authors, subjects, and publication years from
+                                the
+                                catalog. Selecting any item will open the publications directory with that filter
+                                applied.</p>
+
+                            <div *ngIf="facetsLoading()" class="text-center py-4">
+                                <div class="spinner-border" role="status" aria-hidden="true"></div>
+                                <p class="text-muted small mt-3 mb-0">Loading facet summary…</p>
+                            </div>
+
+                            <div *ngIf="!facetsLoading() && facetsError()" class="alert alert-warning small"
+                                role="alert">
+                                {{ facetsError() }}
+                            </div>
+
+                            <ng-container *ngIf="!facetsLoading() && !facetsError()">
+                                <ng-container *ngIf="publicationFacets() as facetData; else facetEmpty">
+                                    <ng-container *ngIf="hasFacetContent(); else facetEmpty">
+                                        <ng-container *ngIf="facetData.journals.items.length > 0">
+                                            <div class="facet-group mb-4">
+                                                <div
+                                                    class="facet-header d-flex justify-content-between align-items-center mb-2">
+                                                    <h3 class="h6 text-uppercase text-muted mb-0">Journals</h3>
+                                                    <a *ngIf="facetData.journals.more_url"
+                                                        class="small text-decoration-none"
+                                                        [href]="facetData.journals.more_url" target="_blank"
+                                                        rel="noopener noreferrer">View all</a>
+                                                </div>
+                                                <ul class="list-unstyled d-flex flex-column gap-2 mb-0 facet-list">
+                                                    <li
+                                                        *ngFor="let item of facetData.journals.items; trackBy: trackFacetValue">
+                                                        <a class="btn btn-sm w-100 facet-button"
+                                                            [routerLink]="['/publications']"
+                                                            [queryParams]="buildFacetQuery('journals', item.value)">
+                                                            <span class="facet-label">{{ item.label }}</span>
+                                                            <span class="badge text-bg-light">{{ item.count }}</span>
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </ng-container>
+
+                                        <ng-container *ngIf="facetData.authors.items.length > 0">
+                                            <div class="facet-group mb-4">
+                                                <div
+                                                    class="facet-header d-flex justify-content-between align-items-center mb-2">
+                                                    <h3 class="h6 text-uppercase text-muted mb-0">Authors</h3>
+                                                    <a *ngIf="facetData.authors.more_url"
+                                                        class="small text-decoration-none"
+                                                        [href]="facetData.authors.more_url" target="_blank"
+                                                        rel="noopener noreferrer">View all</a>
+                                                </div>
+                                                <ul class="list-unstyled d-flex flex-column gap-2 mb-0 facet-list">
+                                                    <li
+                                                        *ngFor="let item of facetData.authors.items; trackBy: trackFacetValue">
+                                                        <a class="btn btn-sm w-100 facet-button"
+                                                            [routerLink]="['/publications']"
+                                                            [queryParams]="buildFacetQuery('authors', item.value)">
+                                                            <span class="facet-label">{{ item.label }}</span>
+                                                            <span class="badge text-bg-light">{{ item.count }}</span>
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </ng-container>
+
+                                        <ng-container *ngIf="facetData.subjects.items.length > 0">
+                                            <div class="facet-group mb-4">
+                                                <div
+                                                    class="facet-header d-flex justify-content-between align-items-center mb-2">
+                                                    <h3 class="h6 text-uppercase text-muted mb-0">Subjects</h3>
+                                                    <a *ngIf="facetData.subjects.more_url"
+                                                        class="small text-decoration-none"
+                                                        [href]="facetData.subjects.more_url" target="_blank"
+                                                        rel="noopener noreferrer">View all</a>
+                                                </div>
+                                                <ul class="list-unstyled d-flex flex-column gap-2 mb-0 facet-list">
+                                                    <li
+                                                        *ngFor="let item of facetData.subjects.items; trackBy: trackFacetValue">
+                                                        <a class="btn btn-sm w-100 facet-button"
+                                                            [routerLink]="['/publications']"
+                                                            [queryParams]="buildFacetQuery('subjects', item.value)">
+                                                            <span class="facet-label">{{ item.label }}</span>
+                                                            <span class="badge text-bg-light">{{ item.count }}</span>
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </ng-container>
+
+                                        <ng-container *ngIf="facetData.issued_years.items.length > 0">
+                                            <div class="facet-group">
+                                                <div
+                                                    class="facet-header d-flex justify-content-between align-items-center mb-2">
+                                                    <h3 class="h6 text-uppercase text-muted mb-0">Issued year</h3>
+                                                    <a *ngIf="facetData.issued_years.more_url"
+                                                        class="small text-decoration-none"
+                                                        [href]="facetData.issued_years.more_url" target="_blank"
+                                                        rel="noopener noreferrer">View all</a>
+                                                </div>
+                                                <ul class="list-unstyled d-flex flex-column gap-2 mb-0 facet-list">
+                                                    <li
+                                                        *ngFor="let item of facetData.issued_years.items; trackBy: trackFacetValue">
+                                                        <a class="btn btn-sm w-100 facet-button"
+                                                            [routerLink]="['/publications']"
+                                                            [queryParams]="buildFacetQuery('issued_years', item.value)">
+                                                            <span class="facet-label">{{ item.label }}</span>
+                                                            <span class="badge text-bg-light">{{ item.count }}</span>
+                                                        </a>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        </ng-container>
+                                    </ng-container>
+                                </ng-container>
+                            </ng-container>
+
+                            <ng-template #facetEmpty>
+                                <p class="small text-muted mb-0">Facet summaries will appear once publication metadata
+                                    is
+                                    available.</p>
+                            </ng-template>
+                        </div>
+                    </section>
+                </aside>
+            </div>
+        </div>
+    </div>
+</section>

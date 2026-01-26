@@ -1,0 +1,75 @@
+.hero-section {
+    background: linear-gradient(135deg, #0f5132 0%, #103f65 60%, #051b11 100%);
+
+    .search-panel {
+        border: 1px solid rgba(15, 81, 50, 0.1);
+
+        .search-results {
+            max-height: 320px;
+            overflow-y: auto;
+
+            a {
+                color: inherit;
+            }
+        }
+    }
+
+    .avatar {
+        width: 64px;
+        height: 64px;
+    }
+}
+
+.text-white-75 {
+    color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.featured-section {
+    background-color: #f2f6f4;
+
+    .collection-card {
+        min-height: 200px;
+        display: flex;
+        align-items: flex-end;
+        cursor: pointer;
+    }
+
+    .card-gradient {
+        position: absolute;
+        inset: 0;
+        opacity: 0.92;
+    }
+}
+
+.bg-accent-ruby {
+    background: linear-gradient(150deg, #a0224b, #de4d64);
+}
+
+.bg-accent-emerald {
+    background: linear-gradient(150deg, #0f5132, #3dbc7f);
+}
+
+.bg-accent-teal {
+    background: linear-gradient(150deg, #164f63, #32a5b4);
+}
+
+.bg-accent-amber {
+    background: linear-gradient(150deg, #8f5009, #f6ad2b);
+}
+
+.content-section {
+    background-color: #f8faf9;
+
+    .insight-card .rounded-circle {
+        width: 56px;
+        height: 56px;
+    }
+}
+
+.recent-researchers-section {
+    background-color: #f4f9f6;
+}
+
+.pb-6 {
+    padding-bottom: 4.5rem;
+}

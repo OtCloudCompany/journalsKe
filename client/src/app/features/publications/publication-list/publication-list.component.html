@@ -1,0 +1,296 @@
+<section class="publications-list py-5">
+    <div class="container-xxl">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
+            <div>
+                <h1 class="h3 mb-1">Publications Catalog</h1>
+                <p class="text-muted mb-0">Discover publications and metadata aligned with the Dublin Core standard.</p>
+            </div>
+            <form [formGroup]="searchForm" class="search-form" role="search">
+                <div class="search-form-controls">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-search"></i></span>
+                        <input type="search" class="form-control" placeholder="Search publications"
+                            formControlName="search">
+                    </div>
+                    <div class="page-size-control">
+                        <label class="form-label mb-0 small text-muted" for="pageSizeSelect">Items per page</label>
+                        <select id="pageSizeSelect" class="form-select form-select-sm" formControlName="pageSize">
+                            <option *ngFor="let size of pageSizeOptions" [ngValue]="size">{{ size }} per page</option>
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div *ngIf="hasActiveFilters()"
+            class="alert bg-success-subtle border-success-subtle text-success-emphasis d-flex flex-column flex-lg-row align-items-lg-center gap-3 mt-3">
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="text-uppercase small text-muted fw-semibold">Active filters:</span>
+                <ng-container *ngFor="let filter of activeFilters()">
+                    <span
+                        class="badge rounded-pill text-bg-light text-success-emphasis d-inline-flex align-items-center gap-2 py-2 px-3">
+                        <span>{{ filter.label }}: {{ filter.value }}</span>
+                        <button type="button" class="btn btn-link p-0 text-success"
+                            (click)="clearFilter(filter.key, filter.dataKey ?? filter.value)"
+                            aria-label="Remove filter">
+                            <i class="bi bi-x-circle"></i>
+                        </button>
+                    </span>
+                </ng-container>
+            </div>
+            <button class="btn btn-outline-success btn-sm ms-lg-auto" type="button" (click)="clearAllFilters()">
+                Clear all
+            </button>
+        </div>
+
+        <div class="row g-4 align-items-start">
+            <div class="col-lg-8 order-2 order-lg-1">
+                <div *ngIf="loading()" class="text-center py-5">
+                    <div class="spinner-border" role="status"></div>
+                    <p class="mt-3 text-muted">Loading publications…</p>
+                </div>
+
+                <div *ngIf="!loading() && error()" class="alert alert-danger" role="alert">
+                    {{ error() }}
+                </div>
+
+                <p *ngIf="!loading() && !error()" class="text-muted small mb-3" aria-live="polite">
+                    {{ resultsSummary() }}
+                </p>
+
+                <ng-container *ngIf="!loading() && !error()">
+                    <div class="row g-4" *ngIf="hasResults()">
+                        <div class="col-md-6" *ngFor="let publication of publications(); trackBy: trackBySlug">
+                            <article class="card h-100 shadow-sm">
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex align-items-center justify-content-between mb-2">
+                                        <h2 class="h5 mb-0">
+                                            <a [routerLink]="['/publications', publication.slug]"
+                                                class="stretched-link text-decoration-none">
+                                                {{ publication.title }}
+                                            </a>
+                                        </h2>
+                                        <span class="badge"
+                                            [ngClass]="publication.issued ? 'text-bg-primary' : 'text-bg-secondary'">
+                                            {{ publication.issued ? (publication.issued | date: 'yyyy') : 'Draft' }}
+                                        </span>
+                                    </div>
+                                    <p class="text-muted flex-grow-1 mb-3">
+                                        {{ formatDescription(publication.description) }}
+                                    </p>
+                                    <dl class="small mb-0">
+                                        <div class="d-flex justify-content-between">
+                                            <dt class="text-muted">Creator</dt>
+                                            <dd class="mb-0">{{ formatList(metadataValues(publication, 'creator')) ||
+                                                'Not listed' }}</dd>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <dt class="text-muted">Contributor</dt>
+                                            <dd class="mb-0">{{ formatList(metadataValues(publication, 'contributor'))
+                                                || 'Not listed' }}</dd>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <dt class="text-muted">Publisher</dt>
+                                            <dd class="mb-0">{{ publication.publisher || 'Not listed' }}</dd>
+                                        </div>
+                                        <div class="d-flex justify-content-between">
+                                            <dt class="text-muted">Language</dt>
+                                            <dd class="mb-0">{{ formatList(metadataValues(publication, 'language')) ||
+                                                'Unknown' }}</dd>
+                                        </div>
+                                    </dl>
+                                </div>
+                            </article>
+                        </div>
+                    </div>
+
+                    <div *ngIf="isEmpty()" class="alert alert-info">
+                        No publications were found. Adjust the keywords or check back soon.
+                    </div>
+                </ng-container>
+
+                <nav class="mt-4" *ngIf="totalPages() > 1 && hasResults()">
+                    <ul class="pagination justify-content-center flex-wrap gap-1">
+                        <li class="page-item" [class.disabled]="page() === 1">
+                            <button class="page-link" type="button" (click)="previousPage()" [disabled]="page() === 1"
+                                aria-label="Previous page">Previous</button>
+                        </li>
+                        <li class="page-item" *ngFor="let pageNumber of pageNumbers()"
+                            [class.active]="pageNumber === page()">
+                            <button class="page-link" type="button" (click)="goToPage(pageNumber)"
+                                [attr.aria-current]="pageNumber === page() ? 'page' : null"
+                                [disabled]="pageNumber === page()">
+                                {{ pageNumber }}
+                            </button>
+                        </li>
+                        <li class="page-item" [class.disabled]="page() === totalPages()">
+                            <button class="page-link" type="button" (click)="nextPage()"
+                                [disabled]="page() === totalPages()" aria-label="Next page">Next</button>
+                        </li>
+                    </ul>
+                    <p class="text-center text-muted small mt-2 mb-0">
+                        Showing page {{ page() }} of {{ totalPages() }} — {{ count() }} publications
+                    </p>
+                </nav>
+            </div>
+
+            <div class="col-lg-4 order-1 order-lg-2">
+                <aside class="sidebar d-flex flex-column gap-4">
+                    <section class="card shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h6 text-uppercase text-muted mb-3">Actions</h2>
+                            <p class="small text-muted mb-3">Authenticated users can contribute new publication records.
+                            </p>
+                            <button class="btn btn-success w-100" type="button" *ngIf="canCreate()"
+                                (click)="goToCreate()">
+                                <i class="bi bi-plus-circle me-1"></i>
+                                Add publication
+                            </button>
+                        </div>
+                    </section>
+
+                    <section class="card shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h6 text-uppercase text-muted mb-3">Filter results</h2>
+                            <form [formGroup]="filtersForm" class="filters-form" novalidate>
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted text-uppercase"
+                                        for="journalFilter">Journal</label>
+                                    <select id="journalFilter" class="form-select form-select-sm"
+                                        formControlName="journal">
+                                        <option value="">All journals</option>
+                                        <option *ngFor="let journal of journalOptions(); trackBy: trackByJournalSlug"
+                                            [value]="journal.slug">
+                                            {{ journal.name }}
+                                        </option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label small text-muted text-uppercase">Issued year</label>
+                                    <div class="dual-range-slider">
+                                        <input type="range" class="form-range range-input range-input--lower"
+                                            formControlName="issuedFromSlider" [min]="issuedYearBounds().min"
+                                            [max]="issuedYearBounds().max" aria-label="Issued year from">
+                                        <input type="range" class="form-range range-input range-input--upper"
+                                            formControlName="issuedToSlider" [min]="issuedYearBounds().min"
+                                            [max]="issuedYearBounds().max" aria-label="Issued year to">
+                                        <div class="range-track" aria-hidden="true" [ngStyle]="issuedRangeTrackStyle">
+                                        </div>
+                                    </div>
+                                    <div
+                                        class="d-flex justify-content-between align-items-center small text-muted mt-2">
+                                        <span>{{ issuedYearBounds().min }}</span>
+                                        <span>
+                                            {{ (issuedFrom() ?? issuedYearBounds().min) }} –
+                                            {{ (issuedTo() ?? issuedYearBounds().max) }}
+                                        </span>
+                                        <span>{{ issuedYearBounds().max }}</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn btn-outline-secondary btn-sm"
+                                    (click)="clearAllFilters()" [disabled]="!hasActiveFilters()">
+                                    Reset filters
+                                </button>
+                            </form>
+                        </div>
+                    </section>
+
+                    <section class="card shadow-sm" *ngIf="facets() as facetData">
+                        <div class="card-body">
+                            <h2 class="h6 text-uppercase text-muted mb-3">Top facets</h2>
+                            <p class="small text-muted mb-3">Refine quickly using the most frequent values. Use the
+                                links to explore the full facet lists.</p>
+
+                            <ng-container *ngIf="facetData.journals.items.length > 0">
+                                <div class="facet-group mb-4">
+                                    <div class="facet-header d-flex justify-content-between align-items-center mb-2">
+                                        <h3 class="h6 text-uppercase text-muted mb-0">Journals</h3>
+                                        <a *ngIf="facetData.journals.more_url" class="small text-decoration-none"
+                                            [routerLink]="facetViewLinks().journals.commands"
+                                            [queryParams]="facetViewLinks().journals.queryParams">View all</a>
+                                    </div>
+                                    <ul class="list-unstyled d-flex flex-column gap-2 mb-0 facet-list">
+                                        <li *ngFor="let item of facetData.journals.items; trackBy: trackByFacetValue">
+                                            <button type="button" class="btn btn-sm w-100 facet-button"
+                                                [class.active]="item.active" (click)="toggleFacet('journals', item)">
+                                                <span class="facet-label">{{ item.label }}</span>
+                                                <span class="badge text-bg-light">{{ item.count }}</span>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </ng-container>
+
+                            <ng-container *ngIf="facetData.authors.items.length > 0">
+                                <div class="facet-group mb-4">
+                                    <div class="facet-header d-flex justify-content-between align-items-center mb-2">
+                                        <h3 class="h6 text-uppercase text-muted mb-0">Authors</h3>
+                                        <a *ngIf="facetData.authors.more_url" class="small text-decoration-none"
+                                            [routerLink]="facetViewLinks().authors.commands"
+                                            [queryParams]="facetViewLinks().authors.queryParams">View all</a>
+                                    </div>
+                                    <ul class="list-unstyled d-flex flex-column gap-2 mb-0 facet-list">
+                                        <li *ngFor="let item of facetData.authors.items; trackBy: trackByFacetValue">
+                                            <button type="button" class="btn btn-sm w-100 facet-button"
+                                                [class.active]="item.active" (click)="toggleFacet('authors', item)">
+                                                <span class="facet-label">{{ item.label }}</span>
+                                                <span class="badge text-bg-light">{{ item.count }}</span>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </ng-container>
+
+                            <ng-container *ngIf="facetData.subjects.items.length > 0">
+                                <div class="facet-group mb-4">
+                                    <div class="facet-header d-flex justify-content-between align-items-center mb-2">
+                                        <h3 class="h6 text-uppercase text-muted mb-0">Subjects</h3>
+                                        <a *ngIf="facetData.subjects.more_url" class="small text-decoration-none"
+                                            [routerLink]="facetViewLinks().subjects.commands"
+                                            [queryParams]="facetViewLinks().subjects.queryParams">View all</a>
+                                    </div>
+                                    <ul class="list-unstyled d-flex flex-column gap-2 mb-0 facet-list">
+                                        <li *ngFor="let item of facetData.subjects.items; trackBy: trackByFacetValue">
+                                            <button type="button" class="btn btn-sm w-100 facet-button"
+                                                [class.active]="item.active" (click)="toggleFacet('subjects', item)">
+                                                <span class="facet-label">{{ item.label }}</span>
+                                                <span class="badge text-bg-light">{{ item.count }}</span>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </ng-container>
+
+                            <ng-container *ngIf="facetData.issued_years.items.length > 0">
+                                <div class="facet-group">
+                                    <div class="facet-header d-flex justify-content-between align-items-center mb-2">
+                                        <h3 class="h6 text-uppercase text-muted mb-0">Issued year</h3>
+                                        <a *ngIf="facetData.issued_years.more_url" class="small text-decoration-none"
+                                            [routerLink]="facetViewLinks().issued_years.commands"
+                                            [queryParams]="facetViewLinks().issued_years.queryParams">View all</a>
+                                    </div>
+                                    <ul class="list-unstyled d-flex flex-column gap-2 mb-0 facet-list">
+                                        <li
+                                            *ngFor="let item of facetData.issued_years.items; trackBy: trackByFacetValue">
+                                            <button type="button" class="btn btn-sm w-100 facet-button"
+                                                [class.active]="item.active"
+                                                (click)="toggleFacet('issued_years', item)">
+                                                <span class="facet-label">{{ item.label }}</span>
+                                                <span class="badge text-bg-light">{{ item.count }}</span>
+                                            </button>
+                                        </li>
+                                    </ul>
+                                </div>
+                            </ng-container>
+
+                            <p class="small text-muted mt-4 mb-0"
+                                *ngIf="!facetData.journals.items.length && !facetData.subjects.items.length && !facetData.authors.items.length && !facetData.issued_years.items.length">
+                                Facet summaries will appear after you run a search.
+                            </p>
+                        </div>
+                    </section>
+                </aside>
+            </div>
+        </div>
+    </div>
+</section>

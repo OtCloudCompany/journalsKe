@@ -1,0 +1,17 @@
+body {
+    background-color: #f3f6f4;
+    color: #1f1f1f;
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+a {
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+.shadow-soft {
+    box-shadow: 0 1.25rem 1.75rem rgba(15, 81, 50, 0.08);
+}

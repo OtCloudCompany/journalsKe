@@ -1,0 +1,12 @@
+.researcher-manage {
+
+    .profile-photo-preview img,
+    .profile-photo-placeholder {
+        width: 96px;
+        height: 96px;
+        border-radius: 50%;
+        object-fit: cover;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+    }
+}

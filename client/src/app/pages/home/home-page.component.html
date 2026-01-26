@@ -1,0 +1,447 @@
+<section class="hero-section text-white py-5 py-lg-6">
+    <div class="container-xxl">
+        <div class="row g-5 align-items-center">
+            <div class="col-lg-7">
+                <span class="badge text-bg-success px-3 py-2 fw-semibold">KeJOL</span>
+                <h3 class="display-10 fw-bold mt-3">A Directory of Academic Journals in Kenya</h3>
+                <p class="lead text-white-75 mb-4">
+                    Discover journals, publications, scholars and publishers driving academic excellence across Kenya.
+                </p>
+                <div class="search-panel bg-white rounded-4 shadow-lg p-4">
+                    <label class="form-label fw-semibold text-uppercase text-muted small mb-2">Search the
+                        network</label>
+                    <ul class="nav nav-tabs nav-justified mb-3" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button id="search-tab-publications-button" type="button" role="tab" class="nav-link"
+                                [class.active]="activeSearchTab() === 'publications'"
+                                [attr.aria-selected]="activeSearchTab() === 'publications'"
+                                aria-controls="search-tab-publications" (click)="setActiveSearchTab('publications')">
+                                Publications
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button id="search-tab-journals-button" type="button" role="tab" class="nav-link"
+                                [class.active]="activeSearchTab() === 'journals'"
+                                [attr.aria-selected]="activeSearchTab() === 'journals'"
+                                aria-controls="search-tab-journals" (click)="setActiveSearchTab('journals')">
+                                Journals
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button id="search-tab-researchers-button" type="button" role="tab" class="nav-link"
+                                [class.active]="activeSearchTab() === 'researchers'"
+                                [attr.aria-selected]="activeSearchTab() === 'researchers'"
+                                aria-controls="search-tab-researchers" (click)="setActiveSearchTab('researchers')">
+                                Researchers
+                            </button>
+                        </li>
+                    </ul>
+                    <div class="tab-content">
+                        <div id="search-tab-publications" class="tab-pane fade"
+                            [class.show]="activeSearchTab() === 'publications'"
+                            [class.active]="activeSearchTab() === 'publications'" role="tabpanel"
+                            aria-labelledby="search-tab-publications-button">
+                            <form [formGroup]="publicationSearchForm" novalidate
+                                (submit)="onSearchSubmit('publications', $event)">
+                                <div class="input-group input-group-lg mb-2">
+                                    <span class="input-group-text bg-transparent border-end-0"><i
+                                            class="bi bi-search"></i></span>
+                                    <input type="search" class="form-control border-start-0"
+                                        placeholder="Search publications by title, author, or keyword"
+                                        aria-label="Search publications" formControlName="query" />
+                                    <button class="btn btn-success px-4" type="submit">Search</button>
+                                </div>
+                            </form>
+                            <div class="text-body-secondary small mb-2" *ngIf="publicationSearching()">
+                                Searching publications…
+                            </div>
+                            <div class="search-results card border-0 shadow-sm mt-2"
+                                *ngIf="getSearchValue('publications') && !publicationSearching()">
+                                <div class="card-body">
+                                    <ng-container *ngIf="publicationResults().length; else noPublicationResults">
+                                        <a class="d-flex align-items-start gap-2 text-decoration-none mb-2"
+                                            *ngFor="let publication of publicationResults(); trackBy: trackBySlug"
+                                            [routerLink]="['/publications', publication.slug]">
+                                            <i class="bi bi-journal-text text-success"></i>
+                                            <div>
+                                                <div class="fw-semibold text-success-emphasis">{{ publication.title
+                                                    }}</div>
+                                                <div class="text-body-secondary small">{{ publication.journal?.name ||
+                                                    'Journal unavailable' }}</div>
+                                            </div>
+                                        </a>
+                                    </ng-container>
+                                    <ng-template #noPublicationResults>
+                                        <div class="text-body-secondary small">No publications found for this query.
+                                        </div>
+                                    </ng-template>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="search-tab-journals" class="tab-pane fade"
+                            [class.show]="activeSearchTab() === 'journals'"
+                            [class.active]="activeSearchTab() === 'journals'" role="tabpanel"
+                            aria-labelledby="search-tab-journals-button">
+                            <form [formGroup]="journalSearchForm" novalidate
+                                (submit)="onSearchSubmit('journals', $event)">
+                                <div class="input-group input-group-lg mb-2">
+                                    <span class="input-group-text bg-transparent border-end-0"><i
+                                            class="bi bi-search"></i></span>
+                                    <input type="search" class="form-control border-start-0"
+                                        placeholder="Search journals by name or publisher" aria-label="Search journals"
+                                        formControlName="query" />
+                                    <button class="btn btn-success px-4" type="submit">Search</button>
+                                </div>
+                            </form>
+                            <div class="text-body-secondary small mb-2" *ngIf="journalSearching()">
+                                Searching journals…
+                            </div>
+                            <div class="search-results card border-0 shadow-sm mt-2"
+                                *ngIf="getSearchValue('journals') && !journalSearching()">
+                                <div class="card-body">
+                                    <ng-container *ngIf="journalResults().length; else noJournalResults">
+                                        <a class="d-flex align-items-start gap-2 text-decoration-none mb-2"
+                                            *ngFor="let journal of journalResults(); trackBy: trackBySlug"
+                                            [routerLink]="['/journals', journal.slug]">
+                                            <i class="bi bi-journal text-success"></i>
+                                            <div>
+                                                <div class="fw-semibold text-success-emphasis">{{ journal.name }}</div>
+                                                <div class="text-body-secondary small">{{ journal.publisher ||
+                                                    'Publisher unavailable' }}<span *ngIf="journal.country"
+                                                        class="ms-1">• {{ journal.country }}</span></div>
+                                            </div>
+                                        </a>
+                                    </ng-container>
+                                    <ng-template #noJournalResults>
+                                        <div class="text-body-secondary small">No journals found for this query.</div>
+                                    </ng-template>
+                                </div>
+                            </div>
+                        </div>
+                        <div id="search-tab-researchers" class="tab-pane fade"
+                            [class.show]="activeSearchTab() === 'researchers'"
+                            [class.active]="activeSearchTab() === 'researchers'" role="tabpanel"
+                            aria-labelledby="search-tab-researchers-button">
+                            <form [formGroup]="researcherSearchForm" novalidate
+                                (submit)="onSearchSubmit('researchers', $event)">
+                                <div class="input-group input-group-lg mb-2">
+                                    <span class="input-group-text bg-transparent border-end-0"><i
+                                            class="bi bi-search"></i></span>
+                                    <input type="search" class="form-control border-start-0"
+                                        placeholder="Search researchers by name or affiliation"
+                                        aria-label="Search researchers" formControlName="query" />
+                                    <button class="btn btn-success px-4" type="submit">Search</button>
+                                </div>
+                            </form>
+                            <div class="text-body-secondary small mb-2" *ngIf="researcherSearching()">
+                                Searching researchers…
+                            </div>
+                            <div class="search-results card border-0 shadow-sm mt-2"
+                                *ngIf="getSearchValue('researchers') && !researcherSearching()">
+                                <div class="card-body">
+                                    <ng-container *ngIf="researcherResults().length; else noResearcherResults">
+                                        <a class="d-flex align-items-start gap-2 text-decoration-none mb-2"
+                                            *ngFor="let researcher of researcherResults(); trackBy: trackBySlug"
+                                            [routerLink]="['/researchers', researcher.slug]">
+                                            <i class="bi bi-person-circle text-success"></i>
+                                            <div>
+                                                <div class="fw-semibold text-success-emphasis">{{
+                                                    researcher.display_name
+                                                    }}</div>
+                                                <div class="text-body-secondary small">{{ researcher.affiliation ||
+                                                    'Affiliation unavailable' }}</div>
+                                            </div>
+                                        </a>
+                                    </ng-container>
+                                    <ng-template #noResearcherResults>
+                                        <div class="text-body-secondary small">No researchers found for this query.
+                                        </div>
+                                    </ng-template>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="d-flex flex-wrap gap-2 mt-3">
+                        @for (filter of searchFilters(); track filter) {
+                        <span class="badge rounded-pill text-bg-secondary bg-opacity-25 text-success-emphasis">
+                            <i class="bi bi-hash me-1"></i>{{ filter }}
+                        </span>
+                        }
+                    </div>
+                    <div class="alert alert-success mt-3 mb-0" *ngIf="showProfileCta()">
+                        <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-3">
+                            <div>
+                                <div class="fw-semibold">Complete your researcher profile</div>
+                                <div class="small text-body-secondary">
+                                    @for (task of profileCtaTasks(); track task) {
+                                    <span class="badge rounded-pill text-bg-light text-success-emphasis me-1">{{ task
+                                        }}</span>
+                                    }
+                                </div>
+                            </div>
+                            <a class="btn btn-success ms-lg-auto" routerLink="/researchers/me">Update profile</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5">
+                <div class="spotlight-card bg-white rounded-4 shadow-lg p-4 h-100">
+                    <ng-container *ngIf="spotlightResearcher(); else spotlightFallback">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="avatar-wrapper">
+                                <img *ngIf="spotlightResearcher()?.profile_photo_url; else spotlightAvatar"
+                                    [src]="spotlightResearcher()!.profile_photo_url!" alt="Profile photo"
+                                    class="avatar rounded-circle">
+                                <ng-template #spotlightAvatar>
+                                    <span
+                                        class="avatar rounded-circle bg-success-subtle text-success-emphasis d-flex align-items-center justify-content-center">
+                                        <i class="bi bi-person-circle fs-2"></i>
+                                    </span>
+                                </ng-template>
+                            </div>
+                            <div>
+                                <h5 class="mb-1 fw-semibold">
+                                    <ng-container *ngIf="spotlightResearcher() as spotlight">
+                                        <a *ngIf="!isPlaceholderProfile(spotlight); else spotlightPlaceholderName"
+                                            class="link-underline link-underline-opacity-0 text-success-emphasis"
+                                            [routerLink]="['/researchers', spotlight.slug]">
+                                            {{ spotlight.display_name }}
+                                        </a>
+                                        <ng-template #spotlightPlaceholderName>
+                                            <span class="text-success-emphasis">{{ spotlight.display_name }}</span>
+                                        </ng-template>
+                                    </ng-container>
+                                </h5>
+                                <div class="text-muted small">{{ spotlightResearcher()!.affiliation || 'Affiliation
+                                    unavailable' }}</div>
+                                <span class="badge text-bg-success-subtle text-success-emphasis mt-2"
+                                    *ngIf="spotlightResearcher()!.current_position">
+                                    {{ spotlightResearcher()!.current_position }}
+                                </span>
+                            </div>
+                        </div>
+                        <hr class="my-4" />
+                        <h6 class="text-uppercase text-muted small">Recent Publications</h6>
+                        <ul class="list-unstyled mb-4"
+                            *ngIf="spotlightPublications().length; else noSpotlightPublications">
+                            @for (pub of spotlightPublications(); track pub.title) {
+                            <li class="d-flex align-items-center py-2 border-bottom border-light-subtle">
+                                <i class="bi bi-journal-text text-success me-3"></i>
+                                <div>
+                                    <span class="fw-semibold d-block">{{ pub.title }}</span>
+                                    <small class="text-muted">{{ formatYearLabel(pub) }}</small>
+                                </div>
+                            </li>
+                            }
+                        </ul>
+                        <ng-template #noSpotlightPublications>
+                            <p class="text-body-secondary small mb-4">No publications linked yet.</p>
+                        </ng-template>
+                        <div class="row text-center g-2">
+                            @for (metric of spotlightStats(); track metric.label) {
+                            <div class="col">
+                                <div class="small text-uppercase text-muted">{{ metric.label }}</div>
+                                <div class="fw-bold fs-5 text-success">{{ metric.value }}</div>
+                            </div>
+                            }
+                        </div>
+                        <div class="mt-4" *ngIf="spotlightInterests().length">
+                            <h6 class="text-uppercase text-muted small">Research Interests</h6>
+                            <div class="d-flex flex-wrap gap-2">
+                                @for (interest of spotlightInterests(); track interest) {
+                                <span class="badge rounded-pill text-bg-light text-success-emphasis">{{ interest
+                                    }}</span>
+                                }
+                            </div>
+                        </div>
+                    </ng-container>
+                    <ng-template #spotlightFallback>
+                        <div class="text-center">
+                            <i class="bi bi-people text-success display-6"></i>
+                            <p class="mt-3 mb-0 text-body-secondary">Verified researcher profiles will appear here once
+                                published.</p>
+                        </div>
+                    </ng-template>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="featured-section py-5">
+    <div class="container-xxl">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h2 class="h4 fw-bold mb-1">Featured Journals</h2>
+                <p class="text-muted mb-0">Curated research themes gaining traction across the country.</p>
+            </div>
+            <a class="btn btn-outline-success btn-sm" routerLink="/journals">
+                Browse all journals
+                <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+        <div class="row g-4 flex-nowrap overflow-auto pb-3">
+            @for (collection of featuredCollections(); track collection.slug) {
+            <div class="col-10 col-sm-6 col-lg-3">
+                <a class="collection-card h-100 rounded-4 text-white position-relative overflow-hidden text-decoration-none"
+                    [routerLink]="['/journals', collection.slug]">
+                    <div class="card-gradient {{ collection.accent }}"></div>
+                    <div class="p-4 position-relative">
+                        <i class="bi {{ collection.icon }} fs-3 mb-3"></i>
+                        <h3 class="h5 fw-semibold">{{ collection.title }}</h3>
+                        <p class="small text-white-75 mb-0">{{ collection.category }}</p>
+                    </div>
+                </a>
+            </div>
+            }
+        </div>
+    </div>
+</section>
+
+
+<section class="recent-researchers-section py-5" *ngIf="additionalResearchers().length">
+    <div class="container-xxl">
+        <div class="d-flex align-items-center justify-content-between mb-4">
+            <div>
+                <h2 class="h4 fw-bold mb-1">Newly Verified Scholars</h2>
+                <p class="text-muted mb-0">Recently verified profiles ready for collaboration.</p>
+            </div>
+            <a class="btn btn-outline-success btn-sm" routerLink="/researchers">Browse all researchers<i
+                    class="bi bi-arrow-right ms-1"></i></a>
+        </div>
+        <div class="row g-4">
+            @for (researcher of additionalResearchers(); track researcher.slug) {
+            <div class="col-md-4">
+                <article class="card border-0 shadow-sm h-100">
+                    <div class="card-body">
+                        <h3 class="h6 fw-semibold mb-1">
+                            <a *ngIf="!isPlaceholderProfile(researcher); else placeholderResearcherName"
+                                class="link-underline link-underline-opacity-0 text-success-emphasis"
+                                [routerLink]="['/researchers', researcher.slug]">
+                                {{ researcher.display_name }}
+                            </a>
+                            <ng-template #placeholderResearcherName>
+                                <span class="text-success-emphasis">{{ researcher.display_name }}</span>
+                            </ng-template>
+                        </h3>
+                        <p class="text-muted small mb-2">{{ researcher.affiliation || 'Affiliation unavailable' }}</p>
+                        <p class="mb-0 text-body-secondary small" *ngIf="researcher.research_interests">
+                            {{ researcher.research_interests }}
+                        </p>
+                    </div>
+                </article>
+            </div>
+            }
+        </div>
+    </div>
+</section>
+
+<section class="content-section pb-6">
+    <div class="container-xxl">
+        <div class="row g-5">
+            <div class="col-lg-8">
+                <section class="mb-5">
+                    <h2 class="h4 fw-bold mb-3">Latest Insights</h2>
+                    <div class="row g-3">
+                        @for (insight of insightCards(); track insight.title) {
+                        <div class="col-md-6">
+                            <div class="card insight-card h-100 border-0 shadow-sm">
+                                <div class="card-body d-flex align-items-start gap-3">
+                                    <span
+                                        class="rounded-circle bg-success-subtle text-success-emphasis d-flex align-items-center justify-content-center flex-shrink-0">
+                                        <i class="bi {{ insight.icon }} fs-4"></i>
+                                    </span>
+                                    <div>
+                                        <p class="text-muted small mb-1 text-uppercase">{{ insight.title }}</p>
+                                        <div class="h3 fw-bold mb-1">{{ insight.value }}</div>
+                                        <p class="mb-0 text-secondary">{{ insight.subLabel }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        }
+                    </div>
+                </section>
+
+                <section class="mb-5">
+                    <h2 class="h4 fw-bold mb-3">Key Statistics</h2>
+                    <div class="row g-3">
+                        @for (stat of keyStatistics(); track stat.label) {
+                        <div class="col-md-4">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body text-center">
+                                    <span
+                                        class="rounded-circle bg-success-subtle text-success-emphasis d-inline-flex align-items-center justify-content-center mb-3"
+                                        style="width: 56px; height: 56px;">
+                                        <i class="bi {{ stat.icon }} fs-4"></i>
+                                    </span>
+                                    <div class="h4 fw-bold">{{ stat.value }}</div>
+                                    <p class="text-muted small mb-0">{{ stat.label }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        }
+                    </div>
+                </section>
+
+                <section>
+                    <h2 class="h4 fw-bold mb-3">News & Opportunities</h2>
+                    <div class="list-group shadow-sm rounded-4 overflow-hidden">
+                        @for (item of newsroomHighlights(); track item.title) {
+                        <a class="list-group-item list-group-item-action d-flex align-items-start gap-3" href="#">
+                            <span
+                                class="rounded-circle bg-success-subtle text-success-emphasis d-flex align-items-center justify-content-center flex-shrink-0"
+                                style="width: 46px; height: 46px;">
+                                <i class="bi {{ item.icon }}"></i>
+                            </span>
+                            <div>
+                                <h5 class="mb-1">{{ item.title }}</h5>
+                                <p class="mb-0 text-muted">{{ item.description }}</p>
+                            </div>
+                            <i class="bi bi-chevron-right ms-auto text-success"></i>
+                        </a>
+                        }
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-lg-4">
+                <aside class="d-flex flex-column gap-4">
+                    <section class="card border-0 shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center justify-content-between mb-3">
+                                <h3 class="h6 text-uppercase text-muted mb-0">Recent Publications</h3>
+                                <a class="small fw-semibold text-success text-decoration-none"
+                                    routerLink="/publications" [queryParams]="recentPublicationListParams">
+                                    View all
+                                </a>
+                            </div>
+                            <ng-container *ngIf="recentPublications().length; else noRecentPublications">
+                                <ul class="list-unstyled mb-0">
+                                    @for (publication of recentPublications(); track publication.slug; let last = $last)
+                                    {
+                                    <li class="py-2" [class.border-bottom]="!last" [class.border-light-subtle]="!last">
+                                        <a class="text-decoration-none"
+                                            [routerLink]="['/publications', publication.slug]">
+                                            <div class="fw-semibold text-success-emphasis">{{ publication.title }}</div>
+                                            <div class="text-body-secondary small">
+                                                {{ formatPublicationIssued(publication) }} · {{
+                                                publication.journal?.name
+                                                || 'Journal unavailable' }}
+                                            </div>
+                                        </a>
+                                    </li>
+                                    }
+                                </ul>
+                            </ng-container>
+                            <ng-template #noRecentPublications>
+                                <p class="text-body-secondary small mb-0">New publications will appear here once
+                                    added.</p>
+                            </ng-template>
+                        </div>
+                    </section>
+                </aside>
+            </div>
+        </div>
+    </div>
+</section>

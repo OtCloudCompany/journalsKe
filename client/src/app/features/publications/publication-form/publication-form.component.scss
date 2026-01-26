@@ -1,0 +1,47 @@
+.publication-form {
+    textarea {
+        resize: vertical;
+    }
+
+    .card {
+        border: none;
+    }
+
+    .metadata-section {
+        background-color: var(--bs-body-bg, #fff);
+        box-shadow: 0 0.125rem 0.75rem rgba(0, 0, 0, 0.05);
+
+        .metadata-presets {
+            .btn-link {
+                padding-left: 0;
+                padding-right: 0.25rem;
+                text-decoration: none;
+
+                &:hover,
+                &:focus {
+                    text-decoration: underline;
+                }
+            }
+        }
+    }
+
+    .metadata-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .metadata-entry {
+        border: 1px solid var(--bs-border-color, #dee2e6);
+        border-radius: 0.75rem;
+        padding: 1rem 1.25rem;
+        background-color: var(--bs-body-bg, #fff);
+        box-shadow: 0 0.125rem 0.5rem rgba(0, 0, 0, 0.05);
+    }
+
+    .metadata-entry-header {
+        .btn {
+            padding: 0.25rem 0.5rem;
+        }
+    }
+}

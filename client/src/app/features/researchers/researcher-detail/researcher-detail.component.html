@@ -1,0 +1,162 @@
+<section class="container py-4 researcher-detail">
+    <div *ngIf="loading()" class="alert alert-info" role="status">
+        Loading researcher profile…
+    </div>
+
+    <div *ngIf="error() && !loading()" class="alert alert-danger" role="alert">
+        {{ error() }}
+    </div>
+
+    <ng-container *ngIf="!loading() && !error() && researcher() as profile">
+        <div class="card shadow-sm mb-4">
+            <div class="card-body p-4">
+                <div class="row g-4 align-items-center">
+                    <div class="col-auto">
+                        <img *ngIf="profile.profile_photo_url; else initials" [src]="profile.profile_photo_url"
+                            [alt]="profile.display_name" class="rounded-circle researcher-avatar">
+                        <ng-template #initials>
+                            <div
+                                class="rounded-circle bg-primary-subtle text-primary-emphasis researcher-avatar d-flex align-items-center justify-content-center fw-semibold">
+                                {{ profile.display_name.charAt(0) | uppercase }}
+                            </div>
+                        </ng-template>
+                    </div>
+                    <div class="col">
+                        <h1 class="h3 mb-1">{{ profile.display_name }}</h1>
+                        <p class="mb-2 text-body-secondary" *ngIf="profile.current_position">
+                            {{ profile.current_position }}
+                        </p>
+                        <p class="mb-2" *ngIf="profile.affiliation">
+                            {{ profile.affiliation }}
+                        </p>
+                        <p class="mb-2" *ngIf="profile.institutional_email">
+                            <a [href]="getEmailLink(profile.institutional_email)">
+                                {{ profile.institutional_email }}
+                            </a>
+                            <span class="badge ms-2" [class.bg-success-subtle]="profile.institutional_email_verified"
+                                [class.text-success]="profile.institutional_email_verified"
+                                [class.bg-warning-subtle]="!profile.institutional_email_verified"
+                                [class.text-warning]="!profile.institutional_email_verified">
+                                {{ profile.institutional_email_verified ? 'Verified institutional email' : 'Awaiting
+                                verification' }}
+                            </span>
+                        </p>
+                        <p class="text-body-secondary mb-0" *ngIf="profile.short_bio">
+                            {{ profile.short_bio }}
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-12 col-xl-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body">
+                        <h2 class="h5 mb-3">Contact & Links</h2>
+                        <ul class="list-unstyled mb-0 small">
+                            <li class="mb-2" *ngIf="profile.google_scholar_url">
+                                <a [href]="profile.google_scholar_url" target="_blank" rel="noopener">Google Scholar</a>
+                            </li>
+                            <li class="mb-2" *ngIf="profile.linkedin_url">
+                                <a [href]="profile.linkedin_url" target="_blank" rel="noopener">LinkedIn</a>
+                            </li>
+                            <li class="mb-2" *ngIf="profile.orcid">
+                                <span>ORCID: {{ profile.orcid }}</span>
+                            </li>
+                            <li class="mb-2" *ngIf="profile.personal_website">
+                                <a [href]="profile.personal_website" target="_blank" rel="noopener">Personal website</a>
+                            </li>
+                            <li
+                                *ngIf="!profile.google_scholar_url && !profile.linkedin_url && !profile.orcid && !profile.personal_website">
+                                <span class="text-body-secondary">No external links available.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-xl-8">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-body">
+                        <h2 class="h5 mb-3">Research Interests</h2>
+                        <p class="mb-0" *ngIf="profile.research_interests; else noInterests">
+                            {{ profile.research_interests }}
+                        </p>
+                        <ng-template #noInterests>
+                            <p class="text-body-secondary mb-0">No research interests listed.</p>
+                        </ng-template>
+                    </div>
+                </div>
+
+                <div class="card shadow-sm mb-4" *ngIf="hasExperiences(); else noExperience">
+                    <div class="card-body">
+                        <h2 class="h5 mb-3">Experience</h2>
+                        <div class="timeline">
+                            <div class="timeline-item"
+                                *ngFor="let experience of profile.experiences; trackBy: trackExperienceById">
+                                <div class="timeline-marker"></div>
+                                <div class="timeline-content">
+                                    <h3 class="h6 mb-1">{{ experience.role }} · {{ experience.employer }}</h3>
+                                    <p class="text-body-secondary small mb-2">
+                                        {{ experience.start_date | date: 'MMM y' }} –
+                                        {{ experience.is_current ? 'Present' : (experience.end_date ?
+                                        (experience.end_date | date: 'MMM y') : 'Present') }}
+                                    </p>
+                                    <p class="mb-0 small" *ngIf="experience.description">{{ experience.description }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <ng-template #noExperience>
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body">
+                            <h2 class="h5 mb-3">Experience</h2>
+                            <p class="text-body-secondary mb-0">No professional experience listed.</p>
+                        </div>
+                    </div>
+                </ng-template>
+
+                <div class="card shadow-sm" *ngIf="hasPublications(); else noPublications">
+                    <div class="card-body">
+                        <h2 class="h5 mb-3">Associated Publications</h2>
+                        <ul class="list-group list-group-flush">
+                            <li class="list-group-item"
+                                *ngFor="let link of profile.publications; trackBy: trackPublicationById">
+                                <div class="d-flex justify-content-between align-items-start gap-3">
+                                    <div>
+                                        <a [routerLink]="['/publications', link.publication.slug]"
+                                            class="fw-semibold text-decoration-none">
+                                            {{ link.publication.title }}
+                                        </a>
+                                        <div class="text-body-secondary small">
+                                            <span *ngIf="link.publication.journal">
+                                                {{ link.publication.journal.name }}
+                                            </span>
+                                            <span *ngIf="link.publication.issued">
+                                                · {{ link.publication.issued | date: 'y' }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <span class="badge bg-light text-body-secondary" *ngIf="link.contribution">
+                                        {{ link.contribution }}
+                                    </span>
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                <ng-template #noPublications>
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h5 mb-3">Associated Publications</h2>
+                            <p class="text-body-secondary mb-0">No publications linked yet.</p>
+                        </div>
+                    </div>
+                </ng-template>
+            </div>
+        </div>
+    </ng-container>
+</section>

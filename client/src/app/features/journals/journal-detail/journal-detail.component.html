@@ -1,0 +1,199 @@
+<section class="journal-detail py-5" *ngIf="!loading(); else loadingState">
+    <div class="container-xxl" *ngIf="!error(); else errorState">
+        <ng-container *ngIf="journal() as journal">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+                <div>
+                    <h1 class="display-6 mb-2">{{ journal.name }}</h1>
+                    <span class="badge" [ngClass]="journal.is_active ? 'text-bg-success' : 'text-bg-secondary'">
+                        {{ journal.is_active ? 'Active' : 'Inactive' }}
+                    </span>
+                </div>
+                <div class="d-flex gap-2" *ngIf="canManage()">
+                    <button class="btn btn-outline-primary" type="button" (click)="viewHarvestLogs()">
+                        <i class="bi bi-clock-history me-1"></i>
+                        Harvest logs
+                    </button>
+                    <button class="btn btn-outline-secondary" type="button" (click)="goToEdit()">
+                        <i class="bi bi-pencil-square me-1"></i>
+                        Edit
+                    </button>
+                    <button class="btn btn-outline-danger" type="button" (click)="deleteJournal()">
+                        <i class="bi bi-trash me-1"></i>
+                        Delete
+                    </button>
+                </div>
+            </div>
+
+            <div class="row g-4 align-items-start">
+                <div class="col-lg-8">
+                    <article class="card shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h5 mb-3">About this journal</h2>
+                            <p class="formatted-text">{{ journal.description || 'No description available.' }}</p>
+                            <dl class="row mb-0">
+                                <dt class="col-sm-4 text-muted">Chief editor</dt>
+                                <dd class="col-sm-8">{{ journal.chief_editor || 'Not listed' }}</dd>
+
+                                <dt class="col-sm-4 text-muted">Publisher</dt>
+                                <dd class="col-sm-8">{{ journal.publisher || 'Not listed' }}</dd>
+
+                                <dt class="col-sm-4 text-muted">Language</dt>
+                                <dd class="col-sm-8">{{ journal.language || 'Not specified' }}</dd>
+
+                                <dt class="col-sm-4 text-muted">Country</dt>
+                                <dd class="col-sm-8">{{ journal.country || 'Not specified' }}</dd>
+
+                                <dt class="col-sm-4 text-muted">Founded</dt>
+                                <dd class="col-sm-8">{{ journal.founded_year || 'Unknown' }}</dd>
+
+                                <dt class="col-sm-4 text-muted">ISSN (Print)</dt>
+                                <dd class="col-sm-8">{{ journal.issn_print || '—' }}</dd>
+
+                                <dt class="col-sm-4 text-muted">ISSN (Online)</dt>
+                                <dd class="col-sm-8">{{ journal.issn_online || '—' }}</dd>
+
+                                <dt class="col-sm-4 text-muted">Homepage</dt>
+                                <dd class="col-sm-8">
+                                    <a *ngIf="journal.homepage_url; else noHomepage" [href]="journal.homepage_url"
+                                        target="_blank" rel="noopener">
+                                        {{ journal.homepage_url }}
+                                        <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                    </a>
+                                    <ng-template #noHomepage>Not provided</ng-template>
+                                </dd>
+
+                                <dt class="col-sm-4 text-muted">OAI-PMH feed</dt>
+                                <dd class="col-sm-8">
+                                    <ng-container *ngIf="journal.oai_url; else noOai">
+                                        <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-2">
+                                            <a [href]="journal.oai_url" target="_blank" rel="noopener">
+                                                {{ journal.oai_url }}
+                                                <i class="bi bi-box-arrow-up-right ms-1"></i>
+                                            </a>
+                                            <button class="btn btn-outline-primary btn-sm" type="button"
+                                                *ngIf="canManage()" (click)="testOaiEndpoint()"
+                                                [disabled]="testingOai()">
+                                                <span *ngIf="testingOai(); else detailTestLabel">Testing…</span>
+                                                <ng-template #detailTestLabel>Test endpoint</ng-template>
+                                            </button>
+                                        </div>
+                                        <p class="small text-muted mt-2 mb-0" *ngIf="testingOai()">
+                                            Testing endpoint…
+                                        </p>
+                                        <p class="small mt-2 mb-0" *ngIf="!testingOai() && oaiTestMessage() as message"
+                                            [class.text-success]="oaiTestSuccess() === true"
+                                            [class.text-danger]="oaiTestSuccess() === false">
+                                            {{ message }}
+                                        </p>
+                                    </ng-container>
+                                    <ng-template #noOai>Not provided</ng-template>
+                                </dd>
+
+                                <dt class="col-sm-4 text-muted">Contact</dt>
+                                <dd class="col-sm-8">
+                                    <a *ngIf="journal.contact_email; else noContact"
+                                        [href]="'mailto:' + journal.contact_email">
+                                        {{ journal.contact_email }}
+                                    </a>
+                                    <ng-template #noContact>Not provided</ng-template>
+                                </dd>
+                            </dl>
+                        </div>
+                    </article>
+
+                    <section class="card shadow-sm mt-4">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h2 class="h5 mb-0">Recent publications</h2>
+                                <div class="d-flex align-items-center gap-2">
+                                    <a class="btn btn-outline-primary btn-sm" [routerLink]="['/publications']"
+                                        [queryParams]="{ journal: journal.slug, journal_name: journal.name }">
+                                        View paginated list
+                                    </a>
+                                    <span class="badge text-bg-light">
+                                        Showing {{ journal.publications?.length || 0 }}
+                                    </span>
+                                </div>
+                            </div>
+                            <ng-container *ngIf="journal.publications?.length; else noPublications">
+                                <div class="list-group list-group-flush">
+                                    <a class="list-group-item list-group-item-action"
+                                        *ngFor="let publication of journal.publications"
+                                        [routerLink]="['/publications', publication.slug]">
+                                        <div class="d-flex justify-content-between align-items-start">
+                                            <div>
+                                                <h3 class="h6 mb-1">{{ publication.title }}</h3>
+                                                <p class="mb-0 text-muted small">
+                                                    {{ publication.publisher || 'Publisher unknown' }}
+                                                    <span *ngIf="publication.resource_type" class="ms-1">
+                                                        • {{ publication.resource_type }}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                            <span class="badge text-bg-secondary" *ngIf="publication.issued">
+                                                {{ publication.issued | date: 'mediumDate' }}
+                                            </span>
+                                        </div>
+                                    </a>
+                                </div>
+                                <p class="text-muted small mt-3 mb-0">Displaying up to five of the most recent
+                                    publications.</p>
+                            </ng-container>
+                            <ng-template #noPublications>
+                                <p class="text-muted mb-0">No publications have been harvested yet.</p>
+                            </ng-template>
+                        </div>
+                    </section>
+                </div>
+                <div class="col-lg-4">
+                    <aside class="card shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h6 text-uppercase text-muted">Metadata</h2>
+                            <ul class="list-unstyled small mb-0">
+                                <li class="d-flex justify-content-between py-2 border-bottom">
+                                    <span>Created</span>
+                                    <strong>{{ journal.created_at | date: 'medium' }}</strong>
+                                </li>
+                                <li class="d-flex justify-content-between py-2 border-bottom">
+                                    <span>Last harvest</span>
+                                    <strong>
+                                        {{ journal.last_harvested_at ? (journal.last_harvested_at | date: 'medium') :
+                                        'Never' }}
+                                    </strong>
+                                </li>
+                                <li class="d-flex justify-content-between py-2">
+                                    <span>Updated</span>
+                                    <strong>{{ journal.updated_at | date: 'medium' }}</strong>
+                                </li>
+                            </ul>
+                        </div>
+                    </aside>
+                    <div class="mt-3">
+                        <a routerLink="/journals" class="btn btn-link p-0"><i class="bi bi-arrow-left me-1"></i> Back to
+                            list</a>
+                    </div>
+                </div>
+            </div>
+        </ng-container>
+    </div>
+</section>
+
+<ng-template #loadingState>
+    <section class="py-5 text-center">
+        <div class="container">
+            <div class="spinner-border" role="status"></div>
+            <p class="mt-3 text-muted">Loading journal…</p>
+        </div>
+    </section>
+</ng-template>
+
+<ng-template #errorState>
+    <section class="py-5">
+        <div class="container">
+            <div class="alert alert-danger" role="alert">
+                {{ error() }}
+            </div>
+            <a routerLink="/journals" class="btn btn-outline-secondary">Back to journals</a>
+        </div>
+    </section>
+</ng-template>

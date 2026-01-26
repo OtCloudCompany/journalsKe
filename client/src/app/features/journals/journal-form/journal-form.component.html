@@ -1,0 +1,143 @@
+<section class="journal-form py-5">
+    <div class="container-xxl">
+        <div class="mb-4">
+            <h1 class="h3 mb-1">{{ isEditMode() ? 'Edit journal' : 'Create journal' }}</h1>
+            <p class="text-muted mb-0">Provide comprehensive details so researchers can quickly understand the
+                publication.</p>
+        </div>
+
+        <div class="alert alert-danger" *ngIf="errorMessage()">{{ errorMessage() }}</div>
+        <div class="alert alert-success" *ngIf="successMessage()">{{ successMessage() }}</div>
+
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label" for="name">Name</label>
+                                <input id="name" type="text" class="form-control" formControlName="name"
+                                    [class.is-invalid]="form.controls.name.invalid && form.controls.name.touched"
+                                    required>
+                                <div class="invalid-feedback">Name is required (min. 3 characters).</div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="description">Description</label>
+                                <textarea id="description" rows="5" class="form-control" formControlName="description"
+                                    placeholder="Provide an overview, scope, and submission focus."></textarea>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="homepage_url">Homepage URL</label>
+                                <input id="homepage_url" type="url" class="form-control" formControlName="homepage_url">
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label" for="oai_url">OAI-PMH URL</label>
+                                <div class="input-group">
+                                    <input id="oai_url" type="url" class="form-control" formControlName="oai_url"
+                                        placeholder="https://example.org/oai?verb=ListRecords&amp;metadataPrefix=oai_dc">
+                                    <button class="btn btn-outline-primary" type="button" (click)="testOaiEndpoint()"
+                                        [disabled]="testingOai() || !hasOaiUrl()">
+                                        <span *ngIf="testingOai(); else testLabel">Testing…</span>
+                                        <ng-template #testLabel>Test endpoint</ng-template>
+                                    </button>
+                                </div>
+                                <div class="form-text">Use the ListRecords endpoint that exposes Dublin Core metadata.
+                                </div>
+                                <p class="small mt-2 mb-0" *ngIf="oaiTestMessage() as testMessage"
+                                    [class.text-success]="oaiTestSuccess() === true"
+                                    [class.text-danger]="oaiTestSuccess() === false">
+                                    {{ testMessage }}
+                                </p>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="chief_editor">Chief editor</label>
+                                    <input id="chief_editor" type="text" class="form-control"
+                                        formControlName="chief_editor">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="publisher">Publisher</label>
+                                    <input id="publisher" type="text" class="form-control" formControlName="publisher">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="issn_print">ISSN (Print)</label>
+                                    <input id="issn_print" type="text" class="form-control"
+                                        formControlName="issn_print">
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="issn_online">ISSN (Online)</label>
+                                    <input id="issn_online" type="text" class="form-control"
+                                        formControlName="issn_online">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label" for="language">Language</label>
+                                    <input id="language" type="text" class="form-control" formControlName="language">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label" for="country">Country</label>
+                                    <input id="country" type="text" class="form-control" formControlName="country">
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label" for="founded_year">Founded year</label>
+                                    <input id="founded_year" type="number" min="1800" max="2100" class="form-control"
+                                        formControlName="founded_year">
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label" for="contact_email">Contact email</label>
+                                    <input id="contact_email" type="email" class="form-control"
+                                        formControlName="contact_email"
+                                        [class.is-invalid]="form.controls.contact_email.invalid && form.controls.contact_email.touched">
+                                    <div class="invalid-feedback">Enter a valid email address.</div>
+                                </div>
+                                <div class="col-md-6 mb-3 d-flex align-items-center">
+                                    <div class="form-check form-switch mt-4">
+                                        <input class="form-check-input" type="checkbox" id="is_active"
+                                            formControlName="is_active">
+                                        <label class="form-check-label" for="is_active">Journal is active</label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <h2 class="h6 text-uppercase text-muted">Actions</h2>
+                            <p class="small text-muted">Only administrators can create or edit journals. Ensure the data
+                                is accurate before publishing.</p>
+                            <div class="d-grid gap-2">
+                                <button class="btn btn-primary" type="submit" [disabled]="submitting()">
+                                    <span *ngIf="submitting(); else submitLabel">Saving…</span>
+                                    <ng-template #submitLabel>{{ isEditMode() ? 'Save changes' : 'Create journal'
+                                        }}</ng-template>
+                                </button>
+                                <button class="btn btn-outline-secondary" type="button" (click)="cancel()"
+                                    [disabled]="submitting()">
+                                    Cancel
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <a routerLink="/journals" class="btn btn-link p-0"><i class="bi bi-arrow-left me-1"></i> Back to
+                            journals</a>
+                    </div>
+                </div>
+            </div>
+        </form>
+    </div>
+</section>

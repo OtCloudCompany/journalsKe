@@ -1,0 +1,14 @@
+<section class="container py-5 verify-institutional-email text-center">
+    <div class="card shadow-sm mx-auto" style="max-width: 480px;">
+        <div class="card-body p-4">
+            <h1 class="h4 mb-3">Institutional Email Verification</h1>
+            <div *ngIf="verifying()" class="spinner-border text-primary mb-3" role="status">
+                <span class="visually-hidden">Verifying…</span>
+            </div>
+            <p class="mb-4" [class.text-success]="success()" [class.text-danger]="!success() && !verifying()">
+                {{ message() }}
+            </p>
+            <a class="btn btn-primary" routerLink="/researchers/me">Go to my profile</a>
+        </div>
+    </div>
+</section>

@@ -1,0 +1,149 @@
+<section class="harvest-log-list py-5">
+    <div class="container-xxl">
+        <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+            <div>
+                <h1 class="h3 mb-2">Harvesting Logs</h1>
+                <p class="text-muted mb-0">
+                    Review recent OAI-PMH harvest attempts
+                    <ng-container *ngIf="journalSlug(); else generalScope">
+                        for <strong>{{ journalName() || journalSlug() }}</strong>.
+                    </ng-container>
+                    <ng-template #generalScope>across all journals.</ng-template>
+                </p>
+            </div>
+            <div class="d-flex align-items-center gap-2">
+                <button type="button" class="btn btn-outline-secondary btn-sm" *ngIf="journalSlug()"
+                    (click)="clearJournalFilter()">
+                    <i class="bi bi-x-circle me-1"></i>
+                    Clear journal filter
+                </button>
+                <a class="btn btn-link p-0" routerLink="/journals">
+                    <i class="bi bi-journal-text me-1"></i>
+                    View journals
+                </a>
+            </div>
+        </div>
+
+        <div class="card shadow-sm mb-4">
+            <div class="card-body d-flex flex-column flex-lg-row gap-3 align-items-lg-center">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="statusFilter" class="form-label small text-muted mb-0">Status</label>
+                    <select #statusSelect id="statusFilter" class="form-select form-select-sm"
+                        (change)="onStatusChange(statusSelect.value)">
+                        <option *ngFor="let option of statusOptions" [value]="option.value ?? 'all'"
+                            [selected]="statusFilter() === option.value">
+                            {{ option.label }}
+                        </option>
+                    </select>
+                </div>
+                <div class="ms-lg-auto d-flex align-items-center gap-2">
+                    <label for="pageSizeSelect" class="form-label small text-muted mb-0">Items per page</label>
+                    <select #pageSizeSelect id="pageSizeSelect" class="form-select form-select-sm" [value]="pageSize()"
+                        (change)="changePageSize(pageSizeSelect.value)">
+                        <option *ngFor="let option of pageSizeOptions" [value]="option">{{ option }}</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div *ngIf="loading()" class="text-center py-5">
+            <div class="spinner-border" role="status"></div>
+            <p class="mt-3 text-muted">Loading harvesting logs…</p>
+        </div>
+
+        <div *ngIf="!loading() && error()" class="alert alert-danger" role="alert">
+            {{ error() }}
+        </div>
+
+        <ng-container *ngIf="!loading() && !error()">
+            <div class="card shadow-sm">
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th scope="col">Journal</th>
+                                <th scope="col">Status</th>
+                                <th scope="col">Records</th>
+                                <th scope="col">Started</th>
+                                <th scope="col">Finished</th>
+                                <th scope="col">Endpoint</th>
+                                <th scope="col">Notes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let log of logs(); trackBy: trackLog">
+                                <td>
+                                    <button type="button" class="btn btn-link p-0" *ngIf="log.journal"
+                                        (click)="navigateToJournal(log)">
+                                        {{ log.journal.name }}
+                                    </button>
+                                    <span *ngIf="!log.journal">—</span>
+                                </td>
+                                <td>
+                                    <span class="badge" [ngClass]="badgeClass(log.status)">
+                                        {{ statusLabel(log.status) }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="fw-semibold">{{ log.record_count }}</span>
+                                </td>
+                                <td>{{ log.started_at | date: 'medium' }}</td>
+                                <td>
+                                    <ng-container *ngIf="log.finished_at; else runningState">
+                                        {{ log.finished_at | date: 'medium' }}
+                                    </ng-container>
+                                    <ng-template #runningState>
+                                        <span class="text-muted">In progress</span>
+                                    </ng-template>
+                                </td>
+                                <td class="small">
+                                    <a *ngIf="log.endpoint" [href]="log.endpoint" target="_blank" rel="noopener">
+                                        {{ log.endpoint }}
+                                    </a>
+                                    <span *ngIf="!log.endpoint">—</span>
+                                </td>
+                                <td class="small">
+                                    <span *ngIf="log.error_message; else noError">
+                                        {{ log.error_message }}
+                                    </span>
+                                    <ng-template #noError>
+                                        <span class="text-muted">—</span>
+                                    </ng-template>
+                                </td>
+                            </tr>
+                            <tr *ngIf="logs().length === 0">
+                                <td colspan="7" class="text-center text-muted py-4">
+                                    No harvesting activity has been recorded yet.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <nav class="mt-4" *ngIf="totalPages() > 1 && hasResults()">
+                <ul class="pagination justify-content-center flex-wrap gap-1">
+                    <li class="page-item" [class.disabled]="page() === 1">
+                        <button class="page-link" type="button" (click)="previousPage()" [disabled]="page() === 1"
+                            aria-label="Previous page">Previous</button>
+                    </li>
+                    <li class="page-item" *ngFor="let pageNumber of pageNumbers()"
+                        [class.active]="pageNumber === page()">
+                        <button class="page-link" type="button" (click)="goToPage(pageNumber)"
+                            [attr.aria-current]="pageNumber === page() ? 'page' : null"
+                            [disabled]="pageNumber === page()">
+                            {{ pageNumber }}
+                        </button>
+                    </li>
+                    <li class="page-item" [class.disabled]="page() === totalPages()">
+                        <button class="page-link" type="button" (click)="nextPage()"
+                            [disabled]="page() === totalPages()" aria-label="Next page">Next</button>
+                    </li>
+                </ul>
+                <p class="text-center text-muted small mt-2 mb-0">
+                    Page {{ page() }} of {{ totalPages() }} — {{ count() }} logs
+                </p>
+            </nav>
+        </ng-container>
+    </div>
+</section>

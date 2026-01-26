@@ -1,0 +1,17 @@
+.harvest-log-list {
+    .table {
+
+        th,
+        td {
+            vertical-align: middle;
+        }
+
+        td {
+            word-break: break-word;
+        }
+    }
+
+    .badge {
+        font-size: 0.75rem;
+    }
+}

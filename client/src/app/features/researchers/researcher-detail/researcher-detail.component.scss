@@ -1,0 +1,33 @@
+.researcher-detail {
+    .researcher-avatar {
+        width: 96px;
+        height: 96px;
+        object-fit: cover;
+        font-size: 2rem;
+    }
+
+    .timeline {
+        position: relative;
+        padding-left: 1.5rem;
+        border-left: 2px solid var(--bs-border-color, #dee2e6);
+    }
+
+    .timeline-item {
+        position: relative;
+        padding-bottom: 1.5rem;
+    }
+
+    .timeline-marker {
+        position: absolute;
+        left: -0.9rem;
+        top: 0.15rem;
+        width: 0.75rem;
+        height: 0.75rem;
+        border-radius: 50%;
+        background-color: var(--bs-primary, #0d6efd);
+    }
+
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+}

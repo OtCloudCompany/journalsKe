@@ -1,0 +1,98 @@
+<section class="container py-4 researcher-list">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+        <div>
+            <h1 class="h3 mb-1">Researchers</h1>
+            <p class="mb-0 text-body-secondary">Browse verified researcher profiles and explore their work.</p>
+        </div>
+        <a class="btn btn-outline-primary" routerLink="/researchers/me">Manage your profile</a>
+    </div>
+
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+            <form class="row g-3 align-items-center" (submit)="$event.preventDefault()">
+                <div class="col-sm-9 col-lg-10">
+                    <label for="search" class="form-label visually-hidden">Search researchers</label>
+                    <input id="search" type="search" class="form-control" [formControl]="searchControl"
+                        placeholder="Search by name, affiliation, or research focus" autocomplete="off">
+                </div>
+                <div class="col-sm-3 col-lg-2 text-sm-end">
+                    <button type="button" class="btn btn-outline-secondary w-100" (click)="searchControl.setValue('')"
+                        [disabled]="!searchControl.value">
+                        Clear
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div *ngIf="loading()" class="alert alert-info" role="status">
+        Loading researchers…
+    </div>
+
+    <div *ngIf="error()" class="alert alert-danger d-flex justify-content-between align-items-center" role="alert">
+        <span>{{ error() }}</span>
+        <button type="button" class="btn btn-sm btn-outline-light" (click)="retry()">Try again</button>
+    </div>
+
+    <div *ngIf="isEmpty()" class="alert alert-secondary" role="status">
+        No researchers found. Adjust your search or check back later.
+    </div>
+
+    <div class="row g-4" *ngIf="hasResults()">
+        <div class="col-12 col-md-6 col-xl-4" *ngFor="let researcher of researchers(); trackBy: trackBySlug">
+            <article class="card h-100 shadow-sm">
+                <div class="card-body d-flex flex-column">
+                    <div class="d-flex align-items-start gap-3 mb-3">
+                        <img *ngIf="researcher.profile_photo_url; else initials" [src]="researcher.profile_photo_url"
+                            [alt]="researcher.display_name" class="rounded-circle researcher-avatar">
+                        <ng-template #initials>
+                            <div
+                                class="rounded-circle bg-primary-subtle text-primary-emphasis researcher-avatar d-flex align-items-center justify-content-center fw-semibold">
+                                {{ researcher.display_name.charAt(0) | uppercase }}
+                            </div>
+                        </ng-template>
+                        <div class="flex-grow-1">
+                            <h2 class="h5 mb-1">
+                                <a class="text-decoration-none" [routerLink]="['/researchers', researcher.slug]">
+                                    {{ researcher.display_name }}
+                                </a>
+                            </h2>
+                            <p class="mb-1 text-body-secondary">
+                                {{ researcher.affiliation || 'Affiliation not provided' }}
+                            </p>
+                            <p class="text-body-tertiary small mb-2" *ngIf="researcher.current_position">
+                                {{ researcher.current_position }}
+                            </p>
+                            <span class="badge" [class.bg-success-subtle]="researcher.institutional_email_verified"
+                                [class.text-success]="researcher.institutional_email_verified"
+                                [class.bg-warning-subtle]="!researcher.institutional_email_verified"
+                                [class.text-warning]="!researcher.institutional_email_verified">
+                                {{ researcher.institutional_email_verified ? 'Verified institutional email' :
+                                'Verification pending' }}
+                            </span>
+                        </div>
+                    </div>
+                    <p class="text-body-secondary small mb-0" *ngIf="researcher.research_interests">
+                        {{ researcher.research_interests }}
+                    </p>
+                </div>
+            </article>
+        </div>
+    </div>
+
+    <nav *ngIf="hasResults() && totalPages() > 1" class="mt-4" aria-label="Researcher pagination">
+        <ul class="pagination justify-content-center flex-wrap gap-1 mb-0">
+            <li class="page-item" [class.disabled]="page() === 1">
+                <button class="page-link" type="button" (click)="previousPage()"
+                    [disabled]="page() === 1">Previous</button>
+            </li>
+            <li class="page-item" *ngFor="let pageNumber of pageNumbers()" [class.active]="page() === pageNumber">
+                <button class="page-link" type="button" (click)="goToPage(pageNumber)">{{ pageNumber }}</button>
+            </li>
+            <li class="page-item" [class.disabled]="page() === totalPages()">
+                <button class="page-link" type="button" (click)="nextPage()"
+                    [disabled]="page() === totalPages()">Next</button>
+            </li>
+        </ul>
+    </nav>
+</section>

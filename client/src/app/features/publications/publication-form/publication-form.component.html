@@ -1,0 +1,320 @@
+<section class="publication-form py-5">
+    <div class="container-xxl">
+        <div class="mb-4">
+            <a routerLink="/publications" class="text-decoration-none small text-muted">
+                <i class="bi bi-arrow-left"></i>
+                Back to publications
+            </a>
+        </div>
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <div class="card shadow-sm">
+                    <div class="card-body p-4 p-lg-5">
+                        <h1 class="h4 mb-1">{{ isEditMode() ? 'Edit publication' : 'Add publication' }}</h1>
+                        <p class="text-muted mb-4">Provide Dublin Core metadata to describe this resource.</p>
+
+                        <div *ngIf="errorMessage()" class="alert alert-danger" role="alert">
+                            {{ errorMessage() }}
+                        </div>
+
+                        <div *ngIf="successMessage()" class="alert alert-success" role="alert">
+                            {{ successMessage() }}
+                        </div>
+
+                        <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+                            <div class="row g-3">
+                                <div class="col-12">
+                                    <div class="border rounded-3 p-3 metadata-section">
+                                        <div
+                                            class="d-flex flex-column flex-lg-row align-items-lg-center justify-content-lg-between gap-3 mb-3">
+                                            <div>
+                                                <span class="form-label mb-0">Metadata entries</span>
+                                                <p class="text-muted small mb-0">Define schema.element.qualifier
+                                                    combinations for this publication or use quick add presets to get
+                                                    started.</p>
+                                            </div>
+                                            <div class="d-flex flex-wrap align-items-center gap-2">
+                                                <button type="button" class="btn btn-outline-primary btn-sm"
+                                                    (click)="addMetadataEntry()">
+                                                    <i class="bi bi-plus-circle me-1"></i>
+                                                    Add metadata field
+                                                </button>
+                                                <div class="metadata-presets d-flex flex-wrap align-items-center gap-1">
+                                                    <span class="text-muted small">Quick add:</span>
+                                                    <button type="button" class="btn btn-link btn-sm"
+                                                        *ngFor="let preset of metadataPresets"
+                                                        (click)="applyPreset(preset)">
+                                                        {{ preset.label }}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <ng-container
+                                            *ngIf="metadataArray().controls.length > 0; else emptyMetadataState">
+                                            <div class="metadata-list">
+                                                <div class="metadata-entry"
+                                                    *ngFor="let group of metadataArray().controls; let i = index"
+                                                    [formGroup]="group">
+                                                    <div
+                                                        class="metadata-entry-header d-flex justify-content-between align-items-start mb-3">
+                                                        <span class="badge bg-light text-secondary">Entry {{ i + 1
+                                                            }}</span>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger"
+                                                            (click)="removeMetadataEntry(i)"
+                                                            aria-label="Remove metadata entry">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                    <div class="row g-3">
+                                                        <div class="col-12 col-md-2">
+                                                            <label class="form-label"
+                                                                [attr.for]="'schema-' + i">Schema</label>
+                                                            <input class="form-control" [id]="'schema-' + i"
+                                                                formControlName="schema" placeholder="dc">
+                                                        </div>
+                                                        <div class="col-12 col-md-3">
+                                                            <label class="form-label"
+                                                                [attr.for]="'element-' + i">Element</label>
+                                                            <input class="form-control" [id]="'element-' + i"
+                                                                formControlName="element" placeholder="element">
+                                                            <div class="invalid-feedback d-block"
+                                                                *ngIf="group.controls.element.invalid && group.controls.element.touched">
+                                                                Element is required.
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-12 col-md-3">
+                                                            <label class="form-label"
+                                                                [attr.for]="'qualifier-' + i">Qualifier</label>
+                                                            <input class="form-control" [id]="'qualifier-' + i"
+                                                                formControlName="qualifier" placeholder="qualifier">
+                                                        </div>
+                                                        <div class="col-12 col-md-2">
+                                                            <label class="form-label"
+                                                                [attr.for]="'language-' + i">Language</label>
+                                                            <input class="form-control" [id]="'language-' + i"
+                                                                formControlName="language" placeholder="en">
+                                                        </div>
+                                                        <div class="col-12">
+                                                            <label class="form-label"
+                                                                [attr.for]="'value-' + i">Value</label>
+                                                            <textarea class="form-control" [id]="'value-' + i" rows="2"
+                                                                formControlName="value"
+                                                                placeholder="Metadata value (required)"></textarea>
+                                                            <div class="invalid-feedback d-block"
+                                                                *ngIf="group.controls.value.invalid && group.controls.value.touched">
+                                                                Value is required.
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </ng-container>
+                                        <ng-template #emptyMetadataState>
+                                            <div class="alert alert-info mb-0">
+                                                No metadata entries yet. Use "Add metadata field" or a quick add button
+                                                to begin.
+                                            </div>
+                                        </ng-template>
+                                    </div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label" for="titleInput">Title *</label>
+                                    <input id="titleInput" type="text" class="form-control" formControlName="title"
+                                        required>
+                                    <div class="invalid-feedback d-block"
+                                        *ngIf="form.controls.title.invalid && form.controls.title.touched">
+                                        Title is required and should be at least 3 characters long.
+                                    </div>
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="titleSchemaInput">Schema</label>
+                                            <input id="titleSchemaInput" type="text" class="form-control"
+                                                formControlName="title_schema" placeholder="dc">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="titleElementInput">Element *</label>
+                                            <input id="titleElementInput" type="text" class="form-control"
+                                                formControlName="title_element" placeholder="title">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="titleQualifierInput">Qualifier</label>
+                                            <input id="titleQualifierInput" type="text" class="form-control"
+                                                formControlName="title_qualifier" placeholder="optional">
+                                        </div>
+                                    </div>
+                                    <div class="form-text text-muted">Configure the schema.element.qualifier used for
+                                        the title metadata.</div>
+                                </div>
+
+                                <div class="col-lg-6">
+                                    <label class="form-label" for="publisherInput">Publisher</label>
+                                    <input id="publisherInput" type="text" class="form-control"
+                                        formControlName="publisher">
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="publisherSchemaInput">Schema</label>
+                                            <input id="publisherSchemaInput" type="text" class="form-control"
+                                                formControlName="publisher_schema" placeholder="dc">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="publisherElementInput">Element *</label>
+                                            <input id="publisherElementInput" type="text" class="form-control"
+                                                formControlName="publisher_element" placeholder="publisher">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="publisherQualifierInput">Qualifier</label>
+                                            <input id="publisherQualifierInput" type="text" class="form-control"
+                                                formControlName="publisher_qualifier" placeholder="optional">
+                                        </div>
+                                    </div>
+                                    <div class="form-text text-muted">Schema.element.qualifier applied to the publisher
+                                        value.</div>
+                                </div>
+
+                                <div class="col-lg-6">
+                                    <label class="form-label" for="typeInput">Resource type</label>
+                                    <input id="typeInput" type="text" class="form-control"
+                                        formControlName="resource_type">
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="resourceTypeSchemaInput">Schema</label>
+                                            <input id="resourceTypeSchemaInput" type="text" class="form-control"
+                                                formControlName="resource_type_schema" placeholder="dc">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="resourceTypeElementInput">Element *</label>
+                                            <input id="resourceTypeElementInput" type="text" class="form-control"
+                                                formControlName="resource_type_element" placeholder="type">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="resourceTypeQualifierInput">Qualifier</label>
+                                            <input id="resourceTypeQualifierInput" type="text" class="form-control"
+                                                formControlName="resource_type_qualifier" placeholder="optional">
+                                        </div>
+                                    </div>
+                                    <div class="form-text text-muted">Schema.element.qualifier for the resource type
+                                        metadata.</div>
+                                </div>
+
+                                <div class="col-lg-6">
+                                    <label class="form-label" for="formatInput">Format</label>
+                                    <input id="formatInput" type="text" class="form-control"
+                                        formControlName="resource_format">
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="resourceFormatSchemaInput">Schema</label>
+                                            <input id="resourceFormatSchemaInput" type="text" class="form-control"
+                                                formControlName="resource_format_schema" placeholder="dc">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="resourceFormatElementInput">Element *</label>
+                                            <input id="resourceFormatElementInput" type="text" class="form-control"
+                                                formControlName="resource_format_element" placeholder="format">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label"
+                                                for="resourceFormatQualifierInput">Qualifier</label>
+                                            <input id="resourceFormatQualifierInput" type="text" class="form-control"
+                                                formControlName="resource_format_qualifier" placeholder="optional">
+                                        </div>
+                                    </div>
+                                    <div class="form-text text-muted">Schema.element.qualifier for the resource format
+                                        metadata.</div>
+                                </div>
+
+                                <div class="col-lg-6">
+                                    <label class="form-label" for="issuedInput">Issued</label>
+                                    <input id="issuedInput" type="date" class="form-control" formControlName="issued">
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="issuedSchemaInput">Schema</label>
+                                            <input id="issuedSchemaInput" type="text" class="form-control"
+                                                formControlName="issued_schema" placeholder="dc">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="issuedElementInput">Element *</label>
+                                            <input id="issuedElementInput" type="text" class="form-control"
+                                                formControlName="issued_element" placeholder="date">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="issuedQualifierInput">Qualifier</label>
+                                            <input id="issuedQualifierInput" type="text" class="form-control"
+                                                formControlName="issued_qualifier" placeholder="issued">
+                                        </div>
+                                    </div>
+                                    <div class="form-text text-muted">Adjust the qualifier if this date maps to a
+                                        different Dublin Core term.</div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label" for="descriptionInput">Description</label>
+                                    <textarea id="descriptionInput" rows="4" class="form-control"
+                                        formControlName="description"></textarea>
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="descriptionSchemaInput">Schema</label>
+                                            <input id="descriptionSchemaInput" type="text" class="form-control"
+                                                formControlName="description_schema" placeholder="dc">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="descriptionElementInput">Element *</label>
+                                            <input id="descriptionElementInput" type="text" class="form-control"
+                                                formControlName="description_element" placeholder="description">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="descriptionQualifierInput">Qualifier</label>
+                                            <input id="descriptionQualifierInput" type="text" class="form-control"
+                                                formControlName="description_qualifier" placeholder="optional">
+                                        </div>
+                                    </div>
+                                    <div class="form-text text-muted">Schema.element.qualifier for the description
+                                        value.</div>
+                                </div>
+
+                                <div class="col-12">
+                                    <label class="form-label" for="rightsInput">Rights</label>
+                                    <textarea id="rightsInput" rows="3" class="form-control"
+                                        formControlName="rights"></textarea>
+                                    <div class="row g-2 mt-2">
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="rightsSchemaInput">Schema</label>
+                                            <input id="rightsSchemaInput" type="text" class="form-control"
+                                                formControlName="rights_schema" placeholder="dc">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="rightsElementInput">Element *</label>
+                                            <input id="rightsElementInput" type="text" class="form-control"
+                                                formControlName="rights_element" placeholder="rights">
+                                        </div>
+                                        <div class="col-12 col-md-4">
+                                            <label class="form-label" for="rightsQualifierInput">Qualifier</label>
+                                            <input id="rightsQualifierInput" type="text" class="form-control"
+                                                formControlName="rights_qualifier" placeholder="optional">
+                                        </div>
+                                    </div>
+                                    <div class="form-text text-muted">Schema.element.qualifier for the rights
+                                        statement.</div>
+                                </div>
+
+                            </div>
+
+                            <div class="d-flex flex-column flex-md-row gap-2 justify-content-end mt-4">
+                                <button class="btn btn-outline-secondary" type="button" (click)="cancel()">
+                                    Cancel
+                                </button>
+                                <button class="btn btn-success" type="submit" [disabled]="submitting()">
+                                    <span *ngIf="submitting()" class="spinner-border spinner-border-sm me-2"
+                                        role="status"></span>
+                                    {{ submitting() ? 'Saving…' : 'Save publication' }}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>

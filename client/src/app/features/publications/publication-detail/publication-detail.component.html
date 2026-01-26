@@ -1,0 +1,153 @@
+<section class="publication-detail py-5">
+    <div class="container-xxl">
+        <div class="mb-4">
+            <a routerLink="/publications" class="text-decoration-none small text-muted">
+                <i class="bi bi-arrow-left"></i>
+                Back to publications
+            </a>
+        </div>
+
+        @if (loading()) {
+        <div class="text-center py-5">
+            <div class="spinner-border" role="status"></div>
+            <p class="mt-3 text-muted">Loading publication…</p>
+        </div>
+        }
+
+        @if (!loading() && error()) {
+        <div class="alert alert-danger" role="alert">
+            {{ error() }}
+        </div>
+        }
+
+        @if (!loading() && !error() && publication()) {
+        <article class="card shadow-sm">
+            <div class="card-body">
+                <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-start gap-3 mb-4">
+                    <div>
+                        <h1 class="h3 mb-1">{{ publication()?.title }}</h1>
+                        <span class="badge" [ngClass]="publication()?.issued ? 'text-bg-primary' : 'text-bg-secondary'">
+                            {{ publication()?.issued ? (publication()?.issued | date: 'mediumDate') : 'Draft' }}
+                        </span>
+                    </div>
+                    @if (canManage()) {
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-secondary" type="button" (click)="goToEdit()">
+                            <i class="bi bi-pencil-square me-1"></i>
+                            Edit
+                        </button>
+                        <button class="btn btn-outline-danger" type="button" (click)="deletePublication()">
+                            <i class="bi bi-trash me-1"></i>
+                            Delete
+                        </button>
+                    </div>
+                    }
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-lg-8">
+                        <section>
+                            <h2 class="h5">Abstract</h2>
+                            <p class="text-muted mb-0 text-align-justify">{{ publication()?.description || 'No
+                                description provided.' }}
+                            </p>
+                        </section>
+
+                        <hr>
+
+                        <section>
+                            <h2 class="h5">Rights</h2>
+                            <p class="text-muted mb-0">{{ publication()?.rights || 'No rights statement supplied.' }}
+                            </p>
+                        </section>
+                    </div>
+                    <div class="col-lg-4">
+                        <section class="meta card bg-light border-0">
+                            <div class="card-body">
+                                <h2 class="h6 text-uppercase text-muted mb-3">Metadata</h2>
+
+                                <div class="metadata-list">
+                                    <!-- Identifiers -->
+                                    @if (metadataValues('identifier').length > 0) {
+                                    @for (id of parseIdentifiers(metadataValues('identifier')); track $index) {
+                                    <div class="metadata-item">
+                                        <dt>
+                                            @if (id.type === 'doi') { <i class="bi bi-link-45deg me-1"></i>DOI }
+                                            @else if (id.type === 'url') { <i class="bi bi-globe me-1"></i>Full-text }
+                                            @else { Identifier }
+                                        </dt>
+                                        <dd>
+                                            @if (id.type !== 'text') {
+                                            <a [href]="id.value" target="_blank" rel="noopener noreferrer"
+                                                class="text-decoration-none text-break">{{ id.label }}</a>
+                                            } @else {
+                                            <span class="text-break">{{ id.value }}</span>
+                                            }
+                                        </dd>
+                                    </div>
+                                    }
+                                    }
+
+                                    <!-- Standard Metadata -->
+                                    @if (publication()?.publisher) {
+                                    <div class="metadata-item">
+                                        <dt>Publisher</dt>
+                                        <dd>
+                                            @if (publication()?.publisher_url) {
+                                            <a [href]="publication()?.publisher_url" target="_blank"
+                                                rel="noopener noreferrer" class="text-decoration-none">
+                                                {{ publication()?.publisher }}
+                                            </a>
+                                            } @else {
+                                            {{ publication()?.publisher }}
+                                            }
+                                        </dd>
+                                    </div>
+                                    }
+                                    @if (publication()?.resource_type) {
+                                    <div class="metadata-item">
+                                        <dt>Type</dt>
+                                        <dd>{{ publication()?.resource_type }}</dd>
+                                    </div>
+                                    }
+                                    @if (publication()?.resource_format) {
+                                    <div class="metadata-item">
+                                        <dt>Format</dt>
+                                        <dd>{{ publication()?.resource_format }}</dd>
+                                    </div>
+                                    }
+                                    @if (publication()?.created_at) {
+                                    <div class="metadata-item">
+                                        <dt>First indexed</dt>
+                                        <dd>{{ publication()?.created_at | date: 'dd-MM-yyyy' }}</dd>
+                                    </div>
+                                    }
+                                    @if (publication()?.updated_at) {
+                                    <div class="metadata-item">
+                                        <dt>Last updated</dt>
+                                        <dd>{{ publication()?.updated_at | date: 'dd-MM-yyyy' }}</dd>
+                                    </div>
+                                    }
+
+                                    <!-- Dynamic Metadata -->
+                                    @if (metadataGroups().length > 0) {
+                                    <div class="metadata-separator my-3">
+                                        <span class="text-uppercase small text-muted">Descriptive Metadata</span>
+                                    </div>
+                                    @for (group of metadataGroups(); track group.label) {
+                                    <div class="metadata-item">
+                                        <dt>{{ group.label }}</dt>
+                                        <dd>{{ joinList(group.values) || 'Not listed' }}</dd>
+                                    </div>
+                                    }
+                                    }
+                                </div>
+                            </div>
+                        </section>
+                    </div>
+                </div>
+            </div>
+        </article>
+        }
+    </div>
+</section>
