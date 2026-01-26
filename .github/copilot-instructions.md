@@ -8,7 +8,7 @@
 ## Environment & Secrets
 - Create `my_secrets.py` from `my_secrets.example.py`; the Django settings import `directory_secrets` (note the spelling) so keep that dict name exact.
 - The committed `my_secrets.py` currently defines `derectory_secrets`; fix or mirror that key before relying on it to avoid `NameError`.
-- Backend assumes `mysqlclient` (or another MySQL driver) is installed and reachable; no `requirements.txt` is present, so document added dependencies.
+- Backend assumes `mysqlclient` (or another MySQL driver) is installed and reachable; 
 
 ## Backend Conventions
 - Use Django REST Framework patterns: add serializers, viewsets, and URL routing under `api/`; keep URLs unified through `server/urls.py`.

@@ -9,6 +9,11 @@ Thumbs.db
 .idea/
 .vscode/
 .github/
+.gemini/
+gemini.md
+my_secrets.py
+.github/
+restart.md
 
 # Python
 __pycache__/

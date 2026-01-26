@@ -76,7 +76,7 @@ sudo apt install -y nodejs
 
 3.  Install Python dependencies:
     ```bash
-    pip install django djangorestframework djangorestframework-simplejwt django-cors-headers django-elasticsearch-dsl django-extensions mysqlclient gunicorn
+    pip install -r requirements.txt
     ```
 
 4.  Configure secrets:
