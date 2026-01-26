@@ -12,7 +12,7 @@ Thumbs.db
 .gemini/
 gemini.md
 my_secrets.py
-.github/
+.github
 restart.md
 
 # Python

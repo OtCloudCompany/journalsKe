@@ -1,50 +1,57 @@
 from django_elasticsearch_dsl import Document, fields
 from django_elasticsearch_dsl.registries import registry
+from elasticsearch_dsl import analyzer
 
 from ..models import Publication
 
+# Define the analyzer explicitly using elasticsearch_dsl
+standard_text_analyzer = analyzer(
+    'standard_text',
+    type='standard',
+    stopwords='_none_'
+)
 
 @registry.register_document
 class PublicationDocument(Document):
-    title = fields.TextField(analyzer="standard_text")
-    description = fields.TextField(analyzer="standard_text")
-    publisher = fields.TextField(analyzer="standard_text")
+    title = fields.TextField(analyzer=standard_text_analyzer)
+    description = fields.TextField(analyzer=standard_text_analyzer)
+    publisher = fields.TextField(analyzer=standard_text_analyzer)
     resource_type = fields.KeywordField()
     resource_format = fields.KeywordField()
-    rights = fields.TextField(analyzer="standard_text")
+    rights = fields.TextField(analyzer=standard_text_analyzer)
     slug = fields.KeywordField()
     issued = fields.DateField()
     created_at = fields.DateField()
     updated_at = fields.DateField()
     journal_slug = fields.KeywordField()
     journal_name = fields.TextField(
-        analyzer="standard_text",
+        analyzer=standard_text_analyzer,
         fields={"raw": fields.KeywordField()}
     )
 
     creator = fields.TextField(
-        analyzer="standard_text",
+        analyzer=standard_text_analyzer,
         multi=True,
         fields={"raw": fields.KeywordField()}
     )
-    contributor = fields.TextField(analyzer="standard_text", multi=True)
+    contributor = fields.TextField(analyzer=standard_text_analyzer, multi=True)
     subject = fields.TextField(
-        analyzer="standard_text",
+        analyzer=standard_text_analyzer,
         multi=True,
         fields={"raw": fields.KeywordField()}
     )
     identifier = fields.KeywordField(multi=True)
-    source = fields.TextField(analyzer="standard_text", multi=True)
+    source = fields.TextField(analyzer=standard_text_analyzer, multi=True)
     language = fields.KeywordField(multi=True)
-    relation = fields.TextField(analyzer="standard_text", multi=True)
-    coverage = fields.TextField(analyzer="standard_text", multi=True)
-    metadata_text = fields.TextField(analyzer="standard_text", multi=True)
+    relation = fields.TextField(analyzer=standard_text_analyzer, multi=True)
+    coverage = fields.TextField(analyzer=standard_text_analyzer, multi=True)
+    metadata_text = fields.TextField(analyzer=standard_text_analyzer, multi=True)
     metadata = fields.NestedField(
         properties={
             "schema": fields.KeywordField(),
             "element": fields.KeywordField(),
             "qualifier": fields.KeywordField(),
-            "value": fields.TextField(analyzer="standard_text"),
+            "value": fields.TextField(analyzer=standard_text_analyzer),
             "language": fields.KeywordField(),
             "position": fields.IntegerField(),
         },
@@ -56,14 +63,6 @@ class PublicationDocument(Document):
         settings = {
             "number_of_shards": 1,
             "number_of_replicas": 0,
-            "analysis": {
-                "analyzer": {
-                    "standard_text": {
-                        "type": "standard",
-                        "stopwords": "_none_",
-                    }
-                }
-            },
         }
 
     class Django:
