@@ -7,7 +7,7 @@
     "build": "ng build",
     "watch": "ng build --watch --configuration development",
     "test": "ng test",
-    "serve:ssr:client": "API_BASE_URL=https://pc-1.tail34a2d7.ts.net:8000/api node dist/client/server/server.mjs"
+    "serve:ssr:client": "API_BASE_URL=https://kejol.otcloud.co.ke/api node dist/client/server/server.mjs"
   },
   "prettier": {
     "printWidth": 100,
