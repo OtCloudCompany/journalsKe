@@ -12,6 +12,9 @@ export interface ResearcherPublicationSummary {
         title: string;
         issued?: string | null;
         journal?: ResearcherJournalSummary | null;
+        is_external?: boolean;
+        external_doi?: string | null;
+        external_url?: string | null;
     };
     contribution?: string | null;
 }

@@ -45,10 +45,22 @@ class RegistrationSerializer(serializers.ModelSerializer):
         fields = ("email", "first_name", "last_name", "password")
 
     def validate_email(self, value: str) -> str:
-        if User.objects.filter(email__iexact=value).exists():
+        normalized = (value or "").strip().lower()
+        if "@" not in normalized:
+            raise serializers.ValidationError("Email must include a domain.")
+        local_part, domain = normalized.rsplit("@", 1)
+        domain = domain.strip().lower()
+        blocked_domains = {
+            entry.lower()
+            for entry in getattr(settings, "INSTITUTIONAL_EMAIL_BLOCKED_DOMAINS", [])
+        }
+        if any(domain == blocked or domain.endswith(f".{blocked}") for blocked in blocked_domains):
             raise serializers.ValidationError(
-                "A user with this email already exists")
-        return value
+                "Cannot register using personal email providers (e.g., Gmail)."
+            )
+        if User.objects.filter(email__iexact=normalized).exists():
+            raise serializers.ValidationError("A user with this email already exists")
+        return normalized
 
     def validate(self, attrs):
         password = attrs.get("password")
@@ -345,6 +357,9 @@ class PublicationSerializer(serializers.ModelSerializer):
             "journal",
             "oai_identifier",
             "oai_datestamp",
+            "is_external",
+            "external_doi",
+            "external_url",
             "created_at",
             "updated_at",
         )
@@ -362,6 +377,9 @@ class PublicationSerializer(serializers.ModelSerializer):
             "journal",
             "oai_identifier",
             "oai_datestamp",
+            "is_external",
+            "external_doi",
+            "external_url",
             "created_at",
             "updated_at",
         )
@@ -638,7 +656,7 @@ class PublicationSummarySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Publication
-        fields = ("id", "slug", "title", "issued", "journal")
+        fields = ("id", "slug", "title", "issued", "journal", "is_external", "external_doi", "external_url")
 
     def get_journal(self, obj: Publication):
         if obj.journal:

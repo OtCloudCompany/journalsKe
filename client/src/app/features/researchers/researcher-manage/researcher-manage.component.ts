@@ -16,6 +16,8 @@ interface PublicationSelection {
     title: string;
     journal?: string | null;
     contribution: string;
+    is_external?: boolean;
+    external_url?: string | null;
 }
 
 @Component({
@@ -61,6 +63,17 @@ export class ResearcherManageComponent implements OnInit {
     readonly selectedPublications = signal<PublicationSelection[]>([]);
     readonly publicationResults = signal<Publication[]>([]);
     readonly publicationSearchLoading = signal(false);
+    readonly importDoiControl = this.formBuilder.nonNullable.control('', [Validators.required]);
+    readonly importingDoi = signal(false);
+    
+    readonly manualPubForm = this.formBuilder.group({
+        title: ['', Validators.required],
+        publisher: [''],
+        issued: [''],
+        doi: [''],
+        url: ['']
+    });
+    readonly addingManual = signal(false);
     salutationOptions: string[] = [
         'Dr.',
         'Prof.',
@@ -234,6 +247,56 @@ export class ResearcherManageComponent implements OnInit {
         this.selectedPublications.set(this.selectedPublications().filter(item => item.id !== id));
     }
 
+    deleteExternalPublication(id: string): void {
+        if (!confirm('Are you sure you want to permanently delete this external publication?')) return;
+        this.researcherApi.deleteExternalPublication(id).subscribe({
+            next: () => {
+                this.removePublication(id);
+                this.successMessage.set('External publication deleted.');
+            },
+            error: (err) => {
+                this.errorMessage.set(err?.error?.detail || 'Failed to delete external publication.');
+            }
+        });
+    }
+
+    importDoi(): void {
+        if (this.importDoiControl.invalid) return;
+        this.importingDoi.set(true);
+        this.researcherApi.importDoi(this.importDoiControl.value).subscribe({
+            next: (profile) => {
+                this.applyProfile(profile);
+                this.importingDoi.set(false);
+                this.importDoiControl.reset();
+                this.successMessage.set('External publication imported.');
+            },
+            error: (err) => {
+                this.errorMessage.set(err?.error?.detail || 'Failed to import DOI.');
+                this.importingDoi.set(false);
+            }
+        });
+    }
+
+    addManualPublication(): void {
+        if (this.manualPubForm.invalid) {
+            this.manualPubForm.markAllAsTouched();
+            return;
+        }
+        this.addingManual.set(true);
+        this.researcherApi.addManualPublication(this.manualPubForm.getRawValue()).subscribe({
+            next: (profile) => {
+                this.applyProfile(profile);
+                this.addingManual.set(false);
+                this.manualPubForm.reset();
+                this.successMessage.set('External publication added.');
+            },
+            error: (err) => {
+                this.errorMessage.set(err?.error?.detail || 'Failed to add publication.');
+                this.addingManual.set(false);
+            }
+        });
+    }
+
     updatePublicationContribution(id: string, value: string): void {
         this.selectedPublications.set(
             this.selectedPublications().map(item =>
@@ -299,7 +362,9 @@ export class ResearcherManageComponent implements OnInit {
                 slug: link.publication.slug,
                 title: link.publication.title,
                 journal: link.publication.journal?.name ?? null,
-                contribution: link.contribution ?? ''
+                contribution: link.contribution ?? '',
+                is_external: link.publication.is_external,
+                external_url: link.publication.external_url
             }))
         );
     }

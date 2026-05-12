@@ -237,6 +237,9 @@ class Publication(models.Model):
         unique=True,
     )
     oai_datestamp = models.DateTimeField(null=True, blank=True)
+    is_external = models.BooleanField(default=False)
+    external_doi = models.CharField(max_length=255, blank=True)
+    external_url = models.URLField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

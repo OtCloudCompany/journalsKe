@@ -90,35 +90,42 @@ sudo apt install -y nodejs
     cd /var/www/journals-ke
     ```
 
-2.  Create a virtual environment and activate it:
+2.  Create necessary directories for static and media files:
+    ```bash
+    mkdir -p static_root media
+    sudo chown -R www-data:www-data media
+    sudo chmod -R 775 media
+    ```
+
+3.  Create a virtual environment and activate it:
     ```bash
     python3 -m venv venv
     source venv/bin/activate
     ```
 
-3.  Install Python dependencies (includes Gunicorn):
+4.  Install Python dependencies (includes Django, Django Rest Framework, Gunicorn, MySQLclient, Pillow, etc.):
     ```bash
     pip install -r requirements.txt
     ```
 
-4.  Configure secrets:
+5.  Configure secrets:
     -   Copy `my_secrets.example.py` to `my_secrets.py`.
     -   Edit `my_secrets.py` and update:
         -   Database credentials (`db_name`, `db_user`, `db_password`)
-        -   Elasticsearch settings (`ELASTICSEARCH_DSL`)
+        -   Elasticsearch settings (e.g., host and credentials)
 
-5.  Run migrations and collect static files:
+6.  Run migrations and collect static files:
     ```bash
     python manage.py migrate
     python manage.py collectstatic --noinput
     ```
 
-6.  Build the Elasticsearch index:
+7.  Build the Elasticsearch index:
     ```bash
     python manage.py search_index --rebuild
     ```
 
-7.  **Setup Gunicorn Service**:
+8.  **Setup Gunicorn Service**:
     Create `/etc/systemd/system/journals-backend.service`:
 
     ```ini
@@ -127,6 +134,7 @@ sudo apt install -y nodejs
     After=network.target
 
     [Service]
+    # Replace 'ubuntu' with your actual non-root deployment username if you prefer not to run as www-data
     User=www-data
     Group=www-data
     WorkingDirectory=/var/www/journals-ke
@@ -137,7 +145,7 @@ sudo apt install -y nodejs
     WantedBy=multi-user.target
     ```
 
-8.  Start and enable the backend service:
+9.  Start and enable the backend service:
     ```bash
     sudo systemctl start journals-backend
     sudo systemctl enable journals-backend

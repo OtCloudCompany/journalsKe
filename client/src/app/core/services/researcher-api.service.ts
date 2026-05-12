@@ -73,4 +73,16 @@ export class ResearcherApiService {
             { token }
         );
     }
+
+    importDoi(doi: string): Observable<ResearcherProfile> {
+        return this.http.post<ResearcherProfile>(`${this.baseUrl}/researchers/me/publications/import-doi/`, { doi });
+    }
+
+    addManualPublication(payload: any): Observable<ResearcherProfile> {
+        return this.http.post<ResearcherProfile>(`${this.baseUrl}/researchers/me/publications/manual/`, payload);
+    }
+
+    deleteExternalPublication(publicationId: string): Observable<void> {
+        return this.http.delete<void>(`${this.baseUrl}/researchers/me/publications/external/${publicationId}/`);
+    }
 }

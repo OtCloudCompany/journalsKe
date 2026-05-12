@@ -127,12 +127,23 @@
                                 *ngFor="let link of profile.publications; trackBy: trackPublicationById">
                                 <div class="d-flex justify-content-between align-items-start gap-3">
                                     <div>
-                                        <a [routerLink]="['/publications', link.publication.slug]"
+                                        <a *ngIf="!link.publication.is_external" [routerLink]="['/publications', link.publication.slug]"
                                             class="fw-semibold text-decoration-none">
                                             {{ link.publication.title }}
                                         </a>
-                                        <div class="text-body-secondary small">
-                                            <span *ngIf="link.publication.journal">
+                                        <a *ngIf="link.publication.is_external" [href]="link.publication.external_url"
+                                            target="_blank" rel="noopener" class="fw-semibold text-decoration-none">
+                                            {{ link.publication.title }} <i class="bi bi-box-arrow-up-right small ms-1"></i>
+                                        </a>
+                                        <div class="text-body-secondary small mt-1">
+                                            <span class="badge border" 
+                                                [class.border-success]="!link.publication.is_external" 
+                                                [class.text-success]="!link.publication.is_external"
+                                                [class.border-secondary]="link.publication.is_external"
+                                                [class.text-secondary]="link.publication.is_external">
+                                                {{ link.publication.is_external ? 'External journal' : 'Indexed journal' }}
+                                            </span>
+                                            <span *ngIf="link.publication.journal" class="ms-2">
                                                 {{ link.publication.journal.name }}
                                             </span>
                                             <span *ngIf="link.publication.issued">

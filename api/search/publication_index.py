@@ -63,6 +63,14 @@ class PublicationDocument(Document):
         settings = {
             "number_of_shards": 1,
             "number_of_replicas": 0,
+            "analysis": {
+                "analyzer": {
+                    "standard_text": {
+                        "type": "standard",
+                        "stopwords": "_none_"
+                    }
+                }
+            }
         }
 
     class Django:
@@ -73,7 +81,7 @@ class PublicationDocument(Document):
         queryset_pagination = 100
 
     def get_queryset(self):
-        return super().get_queryset().prefetch_related("metadata_entries")
+        return super().get_queryset().filter(is_external=False).prefetch_related("metadata_entries")
 
     def prepare_creator(self, instance: Publication):
         return instance.metadata_values("creator")

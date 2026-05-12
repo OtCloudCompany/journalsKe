@@ -28,6 +28,7 @@ from .models import (
     PublicationMetadata,
     ResearcherInstitutionalEmailToken,
     ResearcherProfile,
+    ResearcherPublication,
 )
 from .pagination import ClientPageNumberPagination
 from .serializers import (
@@ -393,6 +394,104 @@ class ResearcherProfileViewSet(viewsets.ModelViewSet):
             status=status.HTTP_200_OK,
         )
 
+    @action(detail=False, methods=["post"], url_path="me/publications/import-doi")
+    def import_doi(self, request, *args, **kwargs):
+        profile = self._get_profile_for_user(request.user)
+        if profile is None:
+            raise NotFound("Researcher profile not found.")
+        
+        doi = request.data.get("doi", "").strip()
+        if not doi:
+            return Response({"detail": "DOI is required."}, status=status.HTTP_400_BAD_REQUEST)
+        
+        import requests
+        from django.db import transaction
+        try:
+            resp = requests.get(f"https://api.crossref.org/works/{doi}")
+            resp.raise_for_status()
+            data = resp.json().get("message", {})
+            title = data.get("title", [""])[0] if data.get("title") else "Unknown Title"
+            publisher = data.get("publisher", "")
+            issued_parts = data.get("issued", {}).get("date-parts", [[None]])[0]
+            if issued_parts and issued_parts[0]:
+                y = issued_parts[0]
+                m = issued_parts[1] if len(issued_parts) > 1 and issued_parts[1] else 1
+                d = issued_parts[2] if len(issued_parts) > 2 and issued_parts[2] else 1
+                issued_date = f"{y:04d}-{m:02d}-{d:02d}"
+            else:
+                issued_date = None
+                
+            with transaction.atomic():
+                pub = Publication.objects.create(
+                    title=title,
+                    publisher=publisher,
+                    issued=issued_date,
+                    is_external=True,
+                    external_doi=doi,
+                    external_url=data.get("URL", f"https://doi.org/{doi}")
+                )
+                ResearcherPublication.objects.create(
+                    profile=profile,
+                    publication=pub,
+                )
+            
+            serializer = ResearcherProfileSerializer(profile, context=self.get_serializer_context())
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"detail": f"Failed to import from Crossref: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=["post"], url_path="me/publications/manual")
+    def manual_publication(self, request, *args, **kwargs):
+        profile = self._get_profile_for_user(request.user)
+        if profile is None:
+            raise NotFound("Researcher profile not found.")
+        
+        title = request.data.get("title", "").strip()
+        if not title:
+            return Response({"detail": "Title is required."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        issued = request.data.get("issued", "").strip()
+        issued_date = None
+        if issued:
+            try:
+                from datetime import datetime
+                issued_date = datetime.strptime(issued, "%Y-%m-%d").date()
+            except ValueError:
+                pass
+                
+        from django.db import transaction
+        with transaction.atomic():
+            pub = Publication.objects.create(
+                title=title,
+                publisher=request.data.get("publisher", "").strip(),
+                issued=issued_date,
+                is_external=True,
+                external_doi=request.data.get("doi", "").strip(),
+                external_url=request.data.get("url", "").strip()
+            )
+            ResearcherPublication.objects.create(
+                profile=profile,
+                publication=pub,
+            )
+            
+        serializer = ResearcherProfileSerializer(profile, context=self.get_serializer_context())
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @action(detail=False, methods=["delete"], url_path=r"me/publications/external/(?P<pub_id>[^/.]+)")
+    def delete_external_publication(self, request, pub_id=None, *args, **kwargs):
+        profile = self._get_profile_for_user(request.user)
+        if profile is None:
+            raise NotFound("Researcher profile not found.")
+        
+        try:
+            rp = ResearcherPublication.objects.get(profile=profile, publication_id=pub_id, publication__is_external=True)
+            pub = rp.publication
+            rp.delete()
+            pub.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except ResearcherPublication.DoesNotExist:
+            return Response({"detail": "External publication not found."}, status=status.HTTP_404_NOT_FOUND)
+
     def _get_profile_for_user(self, user):
         if not user.is_authenticated:
             return None
@@ -535,7 +634,7 @@ class PublicationViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
     def get_queryset(self):
-        queryset = super().get_queryset()
+        queryset = super().get_queryset().filter(is_external=False)
         params = self.request.query_params
         journal_slug = params.get("journal")
         journal_id = params.get("journal_id")
