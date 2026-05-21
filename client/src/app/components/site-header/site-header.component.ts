@@ -18,7 +18,7 @@ export class SiteHeaderComponent {
 
     protected readonly brand = {
         name: 'KeJOL',
-        tagline: 'Academic Journals in Kenya'
+        tagline: 'Kenyan Journals OnLine'
     };
 
     protected readonly primaryNav = signal([
