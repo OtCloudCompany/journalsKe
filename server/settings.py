@@ -28,7 +28,7 @@ SECRET_KEY = 'dinsecure-jxmsyej(0w7!g741niom0mkg#m=x^*v6!x833t#9+tw^3y+_x-'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['pc-1.tail34a2d7.ts.net', 'pc-1.tail34a2d7.ts.net:8000', 'localhost', '127.0.0.1', '0.0.0.0', '100.117.118.37', '172.30.80.1', '172.29.224.1', '172.16.14.10', '192.168.137.1']
+ALLOWED_HOSTS = ['kejol.klisc.or.ke', 'kejol.klisc.or.ke:8000', 'pc-1.tail34a2d7.ts.net', 'pc-1.tail34a2d7.ts.net:8000', 'localhost', '127.0.0.1', '0.0.0.0', '100.117.118.37', '172.30.80.1', '172.29.224.1', '172.16.14.10', '192.168.137.1']
 
 # Application definition
 
@@ -144,11 +144,13 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:4200",
     "http://127.0.0.1:4200",
+    "https://kejol.klisc.or.ke",
     "https://pc-1.tail34a2d7.ts.net",
     "https://pc-1.tail34a2d7.ts.net:8000",
 ]
 
 CSRF_TRUSTED_ORIGINS = [
+    "https://kejol.klisc.or.ke",
     "https://pc-1.tail34a2d7.ts.net",
 ]
 
@@ -182,7 +184,7 @@ SESSION_SAVE_EVERY_REQUEST = True
 
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 DEFAULT_FROM_EMAIL = 'no-reply@journals-ke.local'
-FRONTEND_BASE_URL = 'http://localhost:4200'
+FRONTEND_BASE_URL = os.environ.get('FRONTEND_BASE_URL', 'https://kejol.klisc.or.ke')
 
 INSTITUTIONAL_EMAIL_BLOCKED_DOMAINS = [
     'gmail.com',

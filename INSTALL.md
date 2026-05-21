@@ -2,7 +2,7 @@
 
 This guide details the steps to deploy the Journals application on Ubuntu 24.04 using Nginx as a reverse proxy, Gunicorn for the Django backend, and Node.js for the Angular SSR frontend.
 
-**Target Domain:** `kejol.otcloud.co.ke`
+**Target Domain:** `kejol.klisc.or.ke`
 
 ## 0. Configure Swap Space (Crucial)
 
@@ -203,7 +203,7 @@ sudo apt install -y nodejs
     ```nginx
     server {
         listen 80;
-        server_name kejol.otcloud.co.ke;
+        server_name kejol.klisc.or.ke;
 
         client_max_body_size 50M;  # Allow larger file uploads
 
@@ -263,7 +263,7 @@ sudo apt install -y nodejs
 Secure your site with a free Let's Encrypt certificate:
 
 ```bash
-sudo certbot --nginx -d kejol.otcloud.co.ke
+sudo certbot --nginx -d kejol.klisc.or.ke
 ```
 
 Follow the prompts to configure HTTPS. Nginx will reload automatically.
@@ -275,4 +275,4 @@ Follow the prompts to configure HTTPS. Nginx will reload automatically.
     sudo ufw allow 'Nginx Full'
     ```
 
-2.  Visit `https://kejol.otcloud.co.ke` to verify the deployment.
+2.  Visit `https://kejol.klisc.or.ke` to verify the deployment.

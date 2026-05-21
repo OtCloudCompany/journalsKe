@@ -76,7 +76,7 @@
             },
             "development": {
               "buildTarget": "client:build:development",
-              "allowedHosts": ["pc-1.tail34a2d7.ts.net"]
+              "allowedHosts": ["kejol.klisc.or.ke", "pc-1.tail34a2d7.ts.net"]
             }
           },
           "defaultConfiguration": "development"
